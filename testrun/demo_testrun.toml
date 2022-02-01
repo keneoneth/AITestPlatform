@@ -9,7 +9,7 @@ y_format = "npy"
 
 [models]
 [models.mnist_demo_model] #name of python script under 'models' folder
-modelnames = ["mymodel"]
+modelname = "mymodel"
 
 [testcases]
 [testcases.demo_testcase] #name of testcase to run under 'testcases' folder

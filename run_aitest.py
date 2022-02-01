@@ -35,6 +35,9 @@ class TestRun:
     def run_test(self):
         from _scripts.load_dataset import DataLoad
         data = DataLoad.load_dataset(TestRun.LOADED_DATASETS[self.dataset_key])
+        from _scripts.load_model import ModelLoad
+        model = ModelLoad.load_model(self.model_key,TestRun.LOADED_MODELS[self.model_key])
+        print(model)
         print(len(data['x']),len(data['y']))
         
 def validate_toml(fname):
