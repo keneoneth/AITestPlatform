@@ -39,9 +39,10 @@ class TestRun:
         model = ModelLoad.load_model(self.model_key,TestRun.LOADED_MODELS[self.model_key])
         from _scripts.load_testcase import TestcaseLoad
         testfunc = TestcaseLoad.load_testcase(self.testcase_key,TestRun.LOADED_TESTCASES[self.testcase_key])
-        print(model)
-        print(testfunc)
-        print(len(data['x']),len(data['y']))
+        ret_d = testfunc(data=data,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key])
+        import json
+        with open(PATH_TO_RESULT+'%s.json'%self.testcase_key, 'w') as f:
+            json.dump(ret_d, f)
         
 def validate_toml(fname):
     assert fname.endswith(".toml"), "[error] fname %s doesn't end with .toml" % str(fname)

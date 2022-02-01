@@ -14,7 +14,7 @@ modelname = "mymodel"
 [testcases]
 [testcases.demo_testcase] #name of testcase to run under 'testcases' folder
 testfunc = "mytest"
-test_train_ratio = [0.7,0.3] # 70% training 30% testing 
+testsize = 0.3 # 70% training 30% testing 
 
 [[testrun]]
 dataset = "mnist"
