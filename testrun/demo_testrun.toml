@@ -1,0 +1,23 @@
+title = "Demo MNIST Example"
+
+[datasets]
+[datasets.mnist]  #name of dataset folder under 'datasets' folder
+x_name = "mnist/jpg_images"
+x_format = "jpg"
+y_name = "mnist/y_numbers"
+y_format = "npy"
+
+[models]
+[models.mnist_demo_model] #name of python script under 'models' folder
+modelnames = ["mymodel"]
+
+[testcases]
+[testcases.demo_testcase] #name of testcase to run under 'testcases' folder
+fit = true
+eval = true
+test_train_ratio = [0.7,0.3] # 70% training 30% testing 
+
+[[testrun]]
+dataset = "mnist"
+model = "mnist_demo_model"
+testcase = "demo_testcase"
