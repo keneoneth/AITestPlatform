@@ -58,8 +58,8 @@ class DataLoad:
     }
 
     @staticmethod
-    def load_dataset(d):
-        x = DataLoad.load_data_x_map[d["x_format"]](d["x_name"],d["x_format"])
-        y = DataLoad.load_data_y_map[d["y_format"]](d["y_name"],d["y_format"])
+    def load_dataset(dataset_key,d):
+        x = DataLoad.load_data_x_map[d["x_format"]](dataset_key+'/'+d["x_name"],d["x_format"])
+        y = DataLoad.load_data_y_map[d["y_format"]](dataset_key+'/'+d["y_name"],d["y_format"])
         
         return {"x":x,"y":y}
