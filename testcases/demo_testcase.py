@@ -9,7 +9,9 @@ def mytest(**args):
     testfunc = args["testfunc"]
     testconfig = args["testconfig"]
     
-    x_train, x_test, y_train, y_test = train_test_split(data['x'], data['y'], test_size=testconfig['testsize'], random_state=42)
+    
+    x_train, x_test, y_train, y_test = train_test_split(data['x'] / 255.0, data['y'], test_size=testconfig['testsize'], random_state=42)
+    print("len(x_train),len(y_train):",len(x_train),len(y_train))
     
     # fit model
     model.fit(x_train, y_train, epochs=5)
@@ -23,7 +25,11 @@ def mytest(**args):
     
     correct_count = 0
     for index,ret in enumerate(prob_ret):
+        # print(ret,np.argmax(ret),y_test[index])
         if np.argmax(ret) == y_test[index]:
             correct_count += 1
+    
+    # print(x_test[0])
+    # print(x_test[1])
     
     return {'avg_acc' : correct_count / len(x_test)}
