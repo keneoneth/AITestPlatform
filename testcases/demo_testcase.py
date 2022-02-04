@@ -9,12 +9,11 @@ def mytest(**args):
     testfunc = args["testfunc"]
     testconfig = args["testconfig"]
     
-    
     x_train, x_test, y_train, y_test = train_test_split(data['x'] / 255.0, data['y'], test_size=testconfig['testsize'], random_state=42)
     print("len(x_train),len(y_train):",len(x_train),len(y_train))
     
     # fit model
-    model.fit(x_train, y_train, epochs=5)
+    model.fit(x_train, y_train, epochs=testconfig['epochs'])
 
     # evaluate model
     model.evaluate(x_test, y_test, verbose=2)

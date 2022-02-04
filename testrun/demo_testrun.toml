@@ -15,6 +15,7 @@ modelname = "mymodel"
 [testcases.demo_testcase] #name of testcase to run under 'testcases' folder
 testfunc = "mytest"
 testsize = 0.3 # 70% training 30% testing 
+epochs = 8
 
 [[testrun]]
 dataset = "mnist"
