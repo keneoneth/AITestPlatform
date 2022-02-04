@@ -16,7 +16,11 @@ def load_normal_image_thread(path, files, format):
     x = []
     for file_name in files:
         if file_name.endswith(format):
-            x.append(np.array(Image.open(path + "/" + file_name)))
+            img_arr = np.array(Image.open(path + "/" + file_name))
+            if len(img_arr.shape) == 2:
+                img_arr = img_arr.reshape(img_arr.shape[0],img_arr.shape[1],1)
+            assert len(img_arr.shape) == 3
+            x.append(img_arr)
     return np.array(x)
 
 def load_normal_images(path, format):
