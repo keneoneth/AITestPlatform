@@ -10,6 +10,7 @@ PATH_TO_DATASET = "./datasets/"
 
 class TestRun:
 
+    KEY_TITLE = "title"
     KEY_DATASET = "dataset"
     KEY_MODEL = "model"
     KEY_TESTCASE = "testcase"
@@ -24,7 +25,8 @@ class TestRun:
         TestRun.LOADED_MODELS = models
         TestRun.LOADED_TESTCASES = testcases
     
-    def __init__(self,dataset_key,model_key,testcase_key):
+    def __init__(self,title,dataset_key,model_key,testcase_key):
+        self.title = "".join(title.split())
         self.dataset_key = dataset_key
         self.model_key = model_key
         self.testcase_key = testcase_key
@@ -41,13 +43,14 @@ class TestRun:
         testfunc = TestcaseLoad.load_testcase(self.testcase_key,TestRun.LOADED_TESTCASES[self.testcase_key])
         ret_d = testfunc(data=data,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key])
         import json
-        with open(PATH_TO_RESULT+'%s.json'%self.testcase_key, 'w') as f:
+        with open(PATH_TO_RESULT+'%s_%s.json'%(self.title,self.testcase_key), 'w') as f:
             json.dump(ret_d, f)
         
 def validate_toml(fname):
     assert fname.endswith(".toml"), "[error] fname %s doesn't end with .toml" % str(fname)
 
 def run_toml(tomlfile):
+   
     KEY_DATASETS = "datasets"
     KEY_MODELS = "models"
     KEY_TESTCASES = "testcases"
@@ -62,7 +65,7 @@ def run_toml(tomlfile):
         print("detecting {}".format(f.name))
         TestRun.load_objects(loaded_toml[KEY_DATASETS],loaded_toml[KEY_MODELS],loaded_toml[KEY_TESTCASES])
         for testrun_dict in loaded_toml[KEY_TESTRUN]:
-            testrun = TestRun(testrun_dict[TestRun.KEY_DATASET],testrun_dict[TestRun.KEY_MODEL],testrun_dict[TestRun.KEY_TESTCASE])
+            testrun = TestRun(loaded_toml[TestRun.KEY_TITLE],testrun_dict[TestRun.KEY_DATASET],testrun_dict[TestRun.KEY_MODEL],testrun_dict[TestRun.KEY_TESTCASE])
             print("running {}".format(testrun))
             testrun.run_test()
         
