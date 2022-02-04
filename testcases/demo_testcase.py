@@ -32,4 +32,4 @@ def mytest(**args):
     # print(x_test[0])
     # print(x_test[1])
     
-    return {'avg_acc' : correct_count / len(x_test)}
+    return [{'avg_acc' : correct_count / len(x_test)}]

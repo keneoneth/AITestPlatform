@@ -1,4 +1,4 @@
-title = "Demo MNIST Example"
+title = "LeNet MNIST Example"
 
 [datasets]
 [datasets.mnist]  #name of dataset folder under 'datasets' folder
@@ -8,7 +8,7 @@ y_name = "y_numbers"
 y_format = "npy"
 
 [models]
-[models.mnist_demo_model] #name of python script under 'models' folder
+[models.lenet_model] #name of python script under 'models' folder
 modelname = "mymodel"
 
 [testcases]
@@ -18,6 +18,6 @@ testsize = 0.3 # 70% training 30% testing
 
 [[testrun]]
 dataset = "mnist"
-model = "mnist_demo_model"
+model = "lenet_model"
 testcase = "demo_testcase"
 out_format = ["json"]
