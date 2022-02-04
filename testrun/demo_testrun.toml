@@ -2,23 +2,23 @@ title = "Demo MNIST Example"
 
 [datasets]
 [datasets.mnist]  #name of dataset folder under 'datasets' folder
-x_name = "jpg_images"
-x_format = "jpg"
-y_name = "y_numbers"
-y_format = "npy"
+x_name = "jpg_images" #folder/file name of data x
+x_format = "jpg" #format of data x
+y_name = "y_numbers" #folder/file name of data y
+y_format = "npy" #format of data y
 
 [models]
 [models.mnist_demo_model] #name of python script under 'models' folder
-modelname = "mymodel"
+modelname = "mymodel" #variable name of model
 
 [testcases]
 [testcases.demo_testcase] #name of testcase to run under 'testcases' folder
-testfunc = "mytest"
-testsize = 0.3 # 70% training 30% testing 
-epochs = 8
+testfunc = "mytest" #function name of testcase
+testsize = 0.3 # 70% training 30% testing #custom testconfig param
+epochs = 8 #custom testconfig param
 
 [[testrun]]
-dataset = "mnist"
-model = "mnist_demo_model"
-testcase = "demo_testcase"
-out_format = ["json"]
+dataset = "mnist" #dataset name
+model = "mnist_demo_model" #model name
+testcase = "demo_testcase" #testcase name
+out_format = ["json"] #output format, only json supported for now
