@@ -67,12 +67,6 @@ class LeNet():
         self.fc3 = tf.keras.layers.Dense(num_classes, activation=None) 
         model.add(self.fc3)
 
-        # set loss function
-        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-
-        # compile model
-        model.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
-
         return model
 
 mymodel = LeNet()

@@ -13,6 +13,12 @@ def mytest(**args):
     num_classes = 10 #digit 0~9
     model = model.forward(10)
 
+    # set loss function
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    # compile model
+    model.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
+
     x_train, x_test, y_train, y_test = train_test_split(data['x'] / 255.0, data['y'], test_size=testconfig['testsize'], random_state=42)
     print("len(x_train),len(y_train):",len(x_train),len(y_train))
     
