@@ -8,6 +8,11 @@ PATH_TO_MODEL = "./models/"
 PATH_TO_RESULT = "./results/"
 PATH_TO_DATASET = "./datasets/"
 
+KEY_TITLE = "title"
+KEY_DATASETS = "datasets"
+KEY_MODELS = "models"
+KEY_TESTCASES = "testcases"
+KEY_TESTRUN = "testrun"
 
 class TestRun:
 
@@ -63,23 +68,17 @@ class TestRun:
             else:
                 print("[warning] out format {} not supported yet".format(self.out_format[index]))
         
-def validate_toml(fname):
-    assert fname.endswith(".toml"), "[error] fname %s doesn't end with .toml" % str(fname)
+def validate_toml(loaded_toml):
+    assert KEY_TITLE in loaded_toml
+    assert KEY_DATASETS in loaded_toml
+    assert KEY_MODELS in loaded_toml
+    assert KEY_TESTCASES in loaded_toml
+    assert KEY_TESTRUN in loaded_toml
 
 def run_toml(tomlfile):
-    KEY_TITLE = "title"
-    KEY_DATASETS = "datasets"
-    KEY_MODELS = "models"
-    KEY_TESTCASES = "testcases"
-    KEY_TESTRUN = "testrun"
-        
     with open(tomlfile) as f:
         loaded_toml = toml.load(f)
-        assert KEY_TITLE in loaded_toml
-        assert KEY_DATASETS in loaded_toml
-        assert KEY_MODELS in loaded_toml
-        assert KEY_TESTCASES in loaded_toml
-        assert KEY_TESTRUN in loaded_toml
+        validate_toml(loaded_toml)
         print("[info] detecting {} with title {}".format(f.name,loaded_toml[KEY_TITLE]))
         TestRun.set_title(loaded_toml[KEY_TITLE])
         TestRun.load_objects(loaded_toml[KEY_DATASETS],loaded_toml[KEY_MODELS],loaded_toml[KEY_TESTCASES])
@@ -95,6 +94,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     tomls_to_run = args.toml.split(",")
     
-    [validate_toml(file) for file in tomls_to_run]
     for tomlfile in tomls_to_run:
         run_toml(tomlfile)
