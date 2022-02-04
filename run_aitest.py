@@ -36,7 +36,8 @@ class TestRun:
     def set_title(title):
         TestRun.title = "".join(title.split())
 
-    def __init__(self,dataset_key,model_key,testcase_key,out_format):
+    def __init__(self,testindex,dataset_key,model_key,testcase_key,out_format):
+        self.testindex = testindex
         self.dataset_key = dataset_key
         self.model_key = model_key
         self.testcase_key = testcase_key
@@ -46,7 +47,7 @@ class TestRun:
         return "dataset:{}|model:{}|testcase:{}".format(self.dataset_key,self.model_key,self.testcase_key)
     
     def out_json_name(self):
-        return '%s_%s.json'%(self.title,self.testcase_key)
+        return '%s_%s_%s.json'%(self.title,self.testcase_key,str(self.testindex))
 
     def run_test(self):
         from _scripts.load_dataset import DataLoad
@@ -82,8 +83,8 @@ def run_toml(tomlfile):
         print("[info] detecting {} with title {}".format(f.name,loaded_toml[KEY_TITLE]))
         TestRun.set_title(loaded_toml[KEY_TITLE])
         TestRun.load_objects(loaded_toml[KEY_DATASETS],loaded_toml[KEY_MODELS],loaded_toml[KEY_TESTCASES])
-        for testrun_dict in loaded_toml[KEY_TESTRUN]:
-            testrun = TestRun(testrun_dict[TestRun.KEY_DATASET],testrun_dict[TestRun.KEY_MODEL],testrun_dict[TestRun.KEY_TESTCASE],testrun_dict[TestRun.KEY_OUTFORMAT])
+        for testindex,testrun_dict in enumerate(loaded_toml[KEY_TESTRUN]):
+            testrun = TestRun(testindex,testrun_dict[TestRun.KEY_DATASET],testrun_dict[TestRun.KEY_MODEL],testrun_dict[TestRun.KEY_TESTCASE],testrun_dict[TestRun.KEY_OUTFORMAT])
             print("[info] running {}".format(testrun))
             testrun.run_test()
         print("[info] testrun {} with title {} done !!!".format(f.name,loaded_toml[KEY_TITLE]))
