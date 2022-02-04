@@ -2,12 +2,13 @@ import tensorflow as tf
 import numpy as np
 
 ''' summary output
+Model: "sequential"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #
 =================================================================
-zero_padding2d (ZeroPadding2 (None, 32, 32, 3)         0
+zero_padding2d (ZeroPadding2 (None, 32, 32, 1)         0
 _________________________________________________________________
-conv2d (Conv2D)              (None, 28, 28, 6)         456
+conv2d (Conv2D)              (None, 28, 28, 6)         156
 _________________________________________________________________
 average_pooling2d (AveragePo (None, 14, 14, 6)         0
 _________________________________________________________________
@@ -23,9 +24,10 @@ dense_1 (Dense)              (None, 84)                10164
 _________________________________________________________________
 dense_2 (Dense)              (None, 10)                850
 =================================================================
-Total params: 62,006
-Trainable params: 62,006
+Total params: 61,706
+Trainable params: 61,706
 Non-trainable params: 0
+_________________________________________________________________
 '''
 
 
@@ -34,7 +36,7 @@ class LeNet():
 
         ###CONV1
         # self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, padding=2, stride=1) #keras version
-        self.pad_input = tf.keras.layers.ZeroPadding2D(input_shape=(28, 28, 1), padding=(2, 2))
+        self.pad_input = tf.keras.layers.ZeroPadding2D(padding=(2, 2))
         self.conv1 = tf.keras.layers.Conv2D(filters=6, kernel_size=5, strides=(1,1), activation=tf.keras.activations.sigmoid)
 
         ###CONV2
@@ -70,4 +72,3 @@ class LeNet():
         return model
 
 mymodel = LeNet().forward()
-print(mymodel.summary())
