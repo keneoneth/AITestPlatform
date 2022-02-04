@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-'''
+''' summary output: assume input shape is 28,28,1 as in mnist
 Model: "sequential"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #
@@ -18,17 +18,24 @@ Trainable params: 101,770
 Non-trainable params: 0
 _________________________________________________________________
 '''
+class DemoModel():
 
-# build model
-mymodel = tf.keras.models.Sequential([
-  tf.keras.layers.Flatten(),
-  tf.keras.layers.Dense(128, activation='relu'),
-  tf.keras.layers.Dropout(0.2),
-  tf.keras.layers.Dense(10)
-])
+    def __init__(self):
+        pass
 
-# set loss function
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    def forward(self,num_classes):
+        # build model
+        model = tf.keras.models.Sequential([
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(num_classes)
+        ])
+        # set loss function
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-# compile model
-mymodel.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
+        # compile model
+        model.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
+        return model
+
+mymodel = DemoModel()

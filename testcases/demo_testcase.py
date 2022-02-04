@@ -9,11 +9,9 @@ def mytest(**args):
     testfunc = args["testfunc"]
     testconfig = args["testconfig"]
     
-    # input_shape=(28, 28, 1)
-    # myinput = tf.keras.Input(shape=(28,28,1))
-    myinput = tf.ones((1,28, 28, 1))
-    model.call(myinput)
-    
+    # forward model
+    num_classes = 10 #digit 0~9
+    model = model.forward(10)
 
     x_train, x_test, y_train, y_test = train_test_split(data['x'] / 255.0, data['y'], test_size=testconfig['testsize'], random_state=42)
     print("len(x_train),len(y_train):",len(x_train),len(y_train))

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-''' summary output
+''' summary output: assume input shape is 28,28,1 as in mnist
 Model: "sequential"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #
@@ -33,10 +33,11 @@ _________________________________________________________________
 
 class LeNet():
     def __init__(self):
+        self.pad_input = tf.keras.layers.ZeroPadding2D(padding=(2, 2))
 
         ###CONV1
         # self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, padding=2, stride=1) #keras version
-        self.pad_input = tf.keras.layers.ZeroPadding2D(padding=(2, 2))
+        
         self.conv1 = tf.keras.layers.Conv2D(filters=6, kernel_size=5, strides=(1,1), activation=tf.keras.activations.sigmoid)
 
         ###CONV2
@@ -47,10 +48,9 @@ class LeNet():
         self.fc1 = tf.keras.layers.Dense(120, activation=tf.keras.activations.sigmoid) 
         # self.fc2 = nn.Linear(in_features=120, out_features=84)
         self.fc2 = tf.keras.layers.Dense(84, activation=tf.keras.activations.sigmoid) 
-        # self.fc3 = nn.Linear(in_features=84, out_features=10)
-        self.fc3 = tf.keras.layers.Dense(10, activation=None) 
+        
 
-    def forward(self):
+    def forward(self,num_classes):
         # build model
         model = tf.keras.models.Sequential()
         model.add(self.pad_input)
@@ -61,6 +61,10 @@ class LeNet():
         model.add(tf.keras.layers.Flatten())
         model.add(self.fc1)
         model.add(self.fc2)
+        
+        ### output layer
+        # self.fc3 = nn.Linear(in_features=84, out_features=10)
+        self.fc3 = tf.keras.layers.Dense(num_classes, activation=None) 
         model.add(self.fc3)
 
         # set loss function
@@ -71,4 +75,4 @@ class LeNet():
 
         return model
 
-mymodel = LeNet().forward()
+mymodel = LeNet()
