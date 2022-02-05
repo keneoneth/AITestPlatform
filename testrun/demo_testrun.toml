@@ -16,6 +16,7 @@ modelname = "mymodel" #variable name of model
 testfunc = "mytest" #function name of testcase
 testsize = 0.3 # 70% training 30% testing #custom testconfig param
 epochs = 8 #custom testconfig param
+detailed_comparison = false
 
 [[testrun]]
 dataset = "mnist" #dataset name

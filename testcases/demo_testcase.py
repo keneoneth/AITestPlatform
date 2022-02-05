@@ -25,21 +25,27 @@ def mytest(**args):
     # fit model
     model.fit(x_train, y_train, epochs=testconfig['epochs'])
 
-    # evaluate model
-    model.evaluate(x_test, y_test, verbose=2)
-
-    # add softmax layer
-    probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
-    prob_ret = probability_model(x_test)
-    
-    # calc accuracy
-    correct_count = 0
-    for index,ret in enumerate(prob_ret):
-        # print(ret,np.argmax(ret),y_test[index])
-        if np.argmax(ret) == y_test[index]:
-            correct_count += 1
-    
     # print model summary
     print(model.summary())
 
-    return [{'avg_acc' : correct_count / len(x_test)}]
+
+    if testconfig['detailed_comparison']:
+        # add softmax layer
+        probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
+        prob_ret = probability_model(x_test)
+        
+        # calc accuracy
+        correct_count = 0
+        for index,ret in enumerate(prob_ret):
+            # print(ret,np.argmax(ret),y_test[index])
+            if np.argmax(ret) == y_test[index]:
+                correct_count += 1
+        return [{'avg_acc' : correct_count / len(x_test)}]
+    else:
+        # evaluate model
+        ret = model.evaluate(x_test, y_test, verbose=2)
+        return [{'avg_acc' : ret[1]}]
+    
+    
+
+    
