@@ -3,9 +3,9 @@ title = "AlexNet MNIST Example"
 [datasets]
 [datasets.mnist]  #name of dataset folder under 'datasets' folder
 x_name = "jpg_images"
-x_format = "jpg"
+x_format = "load_image_paths"
 y_name = "y_numbers"
-y_format = "npy"
+y_format = "load_npy"
 
 [models]
 [models.alexnet_model] #name of python script under 'models' folder
@@ -14,9 +14,11 @@ modelname = "mymodel"
 [testcases]
 [testcases.alexnet_mnist_testcase] #name of testcase to run under 'testcases' folder
 testfunc = "mytest"
-testsize = 0.3 # 70% training 30% testing 
-epochs = 6
+testsize = 0.3 # 70% training 30% testing
+validsize = 0.2 # 20% validation in training set 
+epochs = 3
 input_shape = [227,227,3] #H,W,C
+batch_size = 100
 
 [[testrun]]
 dataset = "mnist"

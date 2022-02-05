@@ -51,11 +51,18 @@ def load_npy(path):
     assert os.path.isfile(fpath)
     return np.load(fpath)
 
+###load image paths
+def load_image_paths(path):
+    ret = []
+    for root,_,files in os.walk(testcase_path(path)):
+        ret = [root + '/' + file for file in files]
+    return ret
 
 class DataLoad:
 
     load_data_x_map = {
-        "load_normal_images" : load_normal_images
+        "load_normal_images" : load_normal_images,
+        "load_image_paths" : load_image_paths
     }
     
     load_data_y_map = {
