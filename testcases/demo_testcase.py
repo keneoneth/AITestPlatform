@@ -11,7 +11,7 @@ def mytest(**args):
     
     # forward model
     num_classes = 10 #digit 0~9
-    model = model.forward(10)
+    model = model.forward(num_classes)
 
     # set loss function
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
