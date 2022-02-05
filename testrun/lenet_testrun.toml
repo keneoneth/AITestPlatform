@@ -3,9 +3,9 @@ title = "LeNet MNIST Example"
 [datasets]
 [datasets.mnist]  #name of dataset folder under 'datasets' folder
 x_name = "jpg_images"
-x_format = "jpg"
+x_format = "load_normal_images"
 y_name = "y_numbers"
-y_format = "npy"
+y_format = "load_npy"
 
 [models]
 [models.lenet_model] #name of python script under 'models' folder
