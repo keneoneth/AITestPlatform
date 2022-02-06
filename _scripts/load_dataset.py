@@ -2,6 +2,7 @@ import os
 import cv2
 import math
 import multiprocessing
+import importlib
 
 try:
     import Image
@@ -71,8 +72,14 @@ class DataLoad:
 
     @staticmethod
     def load_dataset(dataset_key,d):
-        assert d["x_format"] in DataLoad.load_data_x_map
-        assert d["y_format"] in DataLoad.load_data_y_map
-        x = DataLoad.load_data_x_map[d["x_format"]](dataset_key+'/'+d["x_name"])
-        y = DataLoad.load_data_y_map[d["y_format"]](dataset_key+'/'+d["y_name"])
-        return {"x":x,"y":y}
+
+        if "loadfname" in d and "loadobj" in d:
+            #custom load
+            dataset_module = importlib.import_module("datasets."+dataset_key+"."+d["loadfname"])
+            return getattr(dataset_module, d["loadobj"])
+        else:
+            assert d["x_format"] in DataLoad.load_data_x_map
+            assert d["y_format"] in DataLoad.load_data_y_map
+            x = DataLoad.load_data_x_map[d["x_format"]](dataset_key+'/'+d["x_name"])
+            y = DataLoad.load_data_y_map[d["y_format"]](dataset_key+'/'+d["y_name"])
+            return {"x":x,"y":y}
