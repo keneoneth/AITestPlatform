@@ -1,3 +1,4 @@
+import os
 import toml
 import argparse
 import json
@@ -47,7 +48,7 @@ class TestRun:
         return "dataset:{}|model:{}|testcase:{}".format(self.dataset_key,self.model_key,self.testcase_key)
     
     def out_json_name(self):
-        return '%s_%s_%s.json'%(self.title,self.testcase_key,str(self.testindex))
+        return '%s/%s_%s.json'%(self.title,self.testcase_key,str(self.testindex))
 
     def run_test(self):
         from _scripts.load_dataset import DataLoad
@@ -82,6 +83,8 @@ def run_toml(tomlfile):
         validate_toml(loaded_toml)
         print("[info] detecting {} with title {}".format(f.name,loaded_toml[KEY_TITLE]))
         TestRun.set_title(loaded_toml[KEY_TITLE])
+        if not os.path.exists(PATH_TO_RESULT+TestRun.title):
+            os.mkdir(PATH_TO_RESULT+TestRun.title)
         TestRun.load_objects(loaded_toml[KEY_DATASETS],loaded_toml[KEY_MODELS],loaded_toml[KEY_TESTCASES])
         for testindex,testrun_dict in enumerate(loaded_toml[KEY_TESTRUN]):
             testrun = TestRun(testindex,testrun_dict[TestRun.KEY_DATASET],testrun_dict[TestRun.KEY_MODEL],testrun_dict[TestRun.KEY_TESTCASE],testrun_dict[TestRun.KEY_OUTFORMAT])
