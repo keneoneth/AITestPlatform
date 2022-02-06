@@ -30,6 +30,8 @@ def batch_npy(y,batch_index=0,batch_size=100):
 
 def mytest(**args):
     
+    test_start_time = time.time()
+
     data = args["data"]
     model = args["model"]
     testfunc = args["testfunc"]
@@ -139,4 +141,6 @@ def mytest(**args):
         test_acc_metric.update_state(batch_y, test_logits)
     test_acc = test_acc_metric.result()
 
-    return [{'avg_acc' : float(test_acc)}]
+    test_duration = time.time() - test_start_time
+
+    return [{'avg_acc' : float(test_acc),'run_time_sec' : float(test_duration)}]

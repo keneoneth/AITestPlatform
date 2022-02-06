@@ -1,9 +1,12 @@
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 import numpy as np
+import time
 
 def mytest(**args):
     
+    test_start_time = time.time()
+
     data = args["data"]
     model = args["model"]
     testfunc = args["testfunc"]
@@ -40,11 +43,13 @@ def mytest(**args):
             # print(ret,np.argmax(ret),y_test[index])
             if np.argmax(ret) == y_test[index]:
                 correct_count += 1
-        return [{'avg_acc' : correct_count / len(x_test)}]
+        test_duration = time.time() - test_start_time
+        return [{'avg_acc' : correct_count / len(x_test), 'run_time_sec' : float(test_duration)}]
     else:
         # evaluate model
         ret = model.evaluate(x_test, y_test, verbose=2)
-        return [{'avg_acc' : ret[1]}]
+        test_duration = time.time() - test_start_time
+        return [{'avg_acc' : ret[1], 'run_time_sec' : float(test_duration)}]
     
     
 
