@@ -24,7 +24,7 @@ def batch_normalize_enlarge_imgs(imgs,input_shape,batch_index=0,batch_size=100):
     new_imgs = []
     for img in imgs[batch_index*batch_size:(batch_index+1)*batch_size]:
         img = np.true_divide(img, 255) # normalize by 255
-        new_imgs.append(cv2.resize(img, (input_shape[0],input_shape[1]), interpolation = cv2.INTER_LINEAR))
+        new_imgs.append(np.array(cv2.resize(img, (input_shape[0],input_shape[1]), interpolation = cv2.INTER_LINEAR),dtype=np.float32))
     new_imgs = np.array(new_imgs)
     return new_imgs
 
@@ -91,6 +91,9 @@ def mytest(**args):
                 #     max_queue_size=10, workers=1, use_multiprocessing=False
                 # )
 
+                x_train_batch = None
+
+
             # update new data
             new_train_data = data.get_train_data()
 
@@ -99,12 +102,14 @@ def mytest(**args):
     test_batch_size = testconfig['test_batch_size']
     test_batch_num = math.ceil(len(test_data['x'])/test_batch_size)
     ret = []
+    weights = []
     for test_batch_index in range(test_batch_num):
         test_x_batch = batch_normalize_enlarge_imgs(test_data['x'],testconfig['input_shape'],batch_index=test_batch_index,batch_size=test_batch_size)
         test_y_batch = batch_npy(test_data['y'],batch_index=test_batch_index,batch_size=test_batch_size)
         test_ret = model.evaluate(test_x_batch, test_y_batch, verbose=0)
         ret.append(test_ret[1])
+        weights.append(len(test_x_batch))
     # print('ret',ret,len(test_data['x']),test_data['x'].shape)
     
     test_duration = time.time() - test_start_time
-    return [{'avg_acc' : np.average(ret), 'run_time_sec' : float(test_duration)}]
+    return [{'avg_acc' : np.average(ret,weights=weights), 'run_time_sec' : float(test_duration)}]
