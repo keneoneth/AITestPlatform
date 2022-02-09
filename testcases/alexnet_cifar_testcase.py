@@ -13,11 +13,11 @@ except ImportError:
 # {b'num_cases_per_batch': 10000, b'label_names': [b'airplane', b'automobile', b'bird', b'cat', b'deer', b'dog', b'frog', b'horse', b'ship', b'truck'], b'num_vis': 3072}
 
 
-def save_img(arr):
+def save_img(arr,fname):
     arr = arr*255
     arr = np.array(arr,dtype=np.uint8)
     im = Image.fromarray(arr)
-    im.save("trial.jpeg")
+    im.save(fname+".jpeg")
 
 def batch_normalize_enlarge_imgs(imgs,input_shape,batch_index=0,batch_size=100):
     assert len(input_shape) == 3
@@ -38,7 +38,6 @@ def mytest(**args):
 
     data = args["data"]
     model = args["model"]
-    testfunc = args["testfunc"]
     testconfig = args["testconfig"]
     
     # forward model
@@ -48,6 +47,9 @@ def mytest(**args):
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     # compile model
     model.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
+
+
+    trial_img_count = 0
 
     # model fit
     for epoch_index in range(testconfig['epochs']):
@@ -69,6 +71,10 @@ def mytest(**args):
             for m_batch_index in range(m_batch_num):
                 x_train_batch = batch_normalize_enlarge_imgs(x_train,testconfig['input_shape'],batch_index=m_batch_index,batch_size=m_batch_size)
                 y_train_batch = batch_npy(y_train,batch_index=m_batch_index,batch_size=m_batch_size)
+
+                if trial_img_count < testconfig["trial_img_no"] and trial_img_count < len(x_train_batch):
+                    save_img(x_train_batch[trial_img_count],"trial_"+str(trial_img_count)+"_item_"+str(y_train_batch[trial_img_count]))
+                    trial_img_count += 1
 
                 # save_img(x_train_batch[0])
                 # print(y_train_batch[0])

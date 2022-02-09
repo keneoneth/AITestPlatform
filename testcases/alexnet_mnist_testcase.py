@@ -34,7 +34,6 @@ def mytest(**args):
 
     data = args["data"]
     model = args["model"]
-    testfunc = args["testfunc"]
     testconfig = args["testconfig"]
     
     # compile model
