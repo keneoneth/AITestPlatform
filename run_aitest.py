@@ -57,7 +57,7 @@ class TestRun:
         model = ModelLoad.load_model(self.model_key,TestRun.LOADED_MODELS[self.model_key])
         from _scripts.load_testcase import TestcaseLoad
         testfunc = TestcaseLoad.load_testcase(self.testcase_key,TestRun.LOADED_TESTCASES[self.testcase_key])
-        rets = testfunc(data=data,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key])
+        rets = testfunc(data=data,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key],result_path=PATH_TO_RESULT+'/'+self.title+"/")
         assert isinstance(rets,list)
         for index,ret in enumerate(rets):
             if not index < len(self.out_format):

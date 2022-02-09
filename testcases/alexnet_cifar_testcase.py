@@ -39,7 +39,8 @@ def mytest(**args):
     data = args["data"]
     model = args["model"]
     testconfig = args["testconfig"]
-    
+    result_path = args["result_path"]
+
     # forward model
     num_classes = 10 #digit 0~9
     model = model.forward(num_classes)
@@ -73,7 +74,7 @@ def mytest(**args):
                 y_train_batch = batch_npy(y_train,batch_index=m_batch_index,batch_size=m_batch_size)
 
                 if trial_img_count < testconfig["trial_img_no"] and trial_img_count < len(x_train_batch):
-                    save_img(x_train_batch[trial_img_count],"trial_"+str(trial_img_count)+"_item_"+str(y_train_batch[trial_img_count]))
+                    save_img(x_train_batch[trial_img_count],result_path+"trial_"+str(trial_img_count)+"_item_"+str(y_train_batch[trial_img_count]))
                     trial_img_count += 1
 
                 # save_img(x_train_batch[0])
