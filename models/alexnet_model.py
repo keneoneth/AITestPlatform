@@ -28,9 +28,9 @@ class AlexNet():
         self.conv5 = tf.keras.layers.Conv2D(filters=256, kernel_size=3, strides=(1,1), activation=tf.keras.activations.relu)
 
         # self.fc1 = nn.Linear(in_features=256*6*6, out_features=4096)
-        self.fc1 = tf.keras.layers.Dense(4096, activation=tf.keras.activations.relu) 
+        self.fc1 = tf.keras.layers.Dense(units=4096, activation=tf.keras.activations.relu) 
         # self.fc2 = nn.Linear(in_features=4096, out_features=1024)
-        self.fc2 = tf.keras.layers.Dense(4096, activation=tf.keras.activations.relu) 
+        self.fc2 = tf.keras.layers.Dense(units=1000, activation=tf.keras.activations.relu) 
        
 
     def forward(self, num_classes):
