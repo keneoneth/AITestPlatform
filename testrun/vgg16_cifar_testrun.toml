@@ -16,7 +16,7 @@ validsize = 0.2
 epochs = 10
 batch_size = 64
 input_shape = [224,224,3] #H,W,C
-test_batch_size = 2000
+test_batch_size = 1024
 train_batch_size = 1024
 trial_img_no = 10
 
