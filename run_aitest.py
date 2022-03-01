@@ -57,7 +57,7 @@ class TestRun:
         model = ModelLoad.load_model(self.model_key,TestRun.LOADED_MODELS[self.model_key])
         from _scripts.load_testcase import TestcaseLoad
         testfunc = TestcaseLoad.load_testcase(self.testcase_key,TestRun.LOADED_TESTCASES[self.testcase_key])
-        rets = testfunc(data=data,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key],result_path=PATH_TO_RESULT+'/'+self.title+"/")
+        rets = testfunc(data=data,model_key=self.model_key,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key],result_path=PATH_TO_RESULT+'/'+self.title+"/")
         assert isinstance(rets,list)
         for index,ret in enumerate(rets):
             if not index < len(self.out_format):
@@ -81,7 +81,7 @@ def run_toml(tomlfile):
     with open(tomlfile) as f:
         loaded_toml = toml.load(f)
         validate_toml(loaded_toml)
-        print("[info] detecting {} with title {}".format(f.name,loaded_toml[KEY_TITLE]))
+        print("[info] processing {} with title {}".format(f.name,loaded_toml[KEY_TITLE]))
         TestRun.set_title(loaded_toml[KEY_TITLE])
         if not os.path.exists(PATH_TO_RESULT+TestRun.title):
             os.mkdir(PATH_TO_RESULT+TestRun.title)

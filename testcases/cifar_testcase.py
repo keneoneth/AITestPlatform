@@ -38,13 +38,17 @@ def mytest(**args):
     test_start_time = time.time()
 
     data = args["data"]
+    model_key = args["model_key"]
     model = args["model"]
     testconfig = args["testconfig"]
     result_path = args["result_path"]
 
     # forward model
     num_classes = 10 #digit 0~9
-    model = model.forward(num_classes)
+    if model_key in ["googlenet_model","googlenet_model"]:
+        model = model.forward(num_classes,tf.keras.Input(shape=tuple(testconfig['input_shape'])))
+    else:
+        model = model.forward(num_classes)
     # set loss function
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     # set optimizer
