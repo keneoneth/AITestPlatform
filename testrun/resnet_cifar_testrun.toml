@@ -1,0 +1,29 @@
+title = "ResNet CIFAR Example"
+
+[datasets]
+[datasets.cifar]  #name of dataset folder under 'datasets' folder
+loadfname = "custom_load"
+loadobj = "load_cifar10"
+
+[models]
+[models.resnet_model] #name of python script under 'models' folder
+modelname = "mymodel"
+
+[testcases]
+[testcases.cifar_testcase] #name of testcase to run under 'testcases' folder
+testfunc = "mytest"
+validsize = 0.001 # 70% training 30% testing
+epochs = 25
+batch_size = 64
+input_shape = [224,224,3] #H,W,C
+test_batch_size = 640
+train_batch_size = 640
+trial_img_no = 10
+resnet_layer = 18
+
+
+[[testrun]]
+dataset = "cifar"
+model = "resnet_model"
+testcase = "cifar_testcase"
+out_format = ["json"]
