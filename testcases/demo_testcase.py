@@ -10,6 +10,8 @@ def mytest(**args):
     data = args["data"]
     model = args["model"]
     testconfig = args["testconfig"]
+    opt_set = args["opt_set"]
+    
     
     # forward model
     num_classes = 10 #digit 0~9
@@ -30,25 +32,27 @@ def mytest(**args):
     # print model summary
     print(model.summary())
 
-
-    if testconfig['detailed_comparison']:
-        # add softmax layer
-        probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
-        prob_ret = probability_model(x_test)
-        
-        # calc accuracy
-        correct_count = 0
-        for index,ret in enumerate(prob_ret):
-            # print(ret,np.argmax(ret),y_test[index])
-            if np.argmax(ret) == y_test[index]:
-                correct_count += 1
-        test_duration = time.time() - test_start_time
-        return [{'avg_acc' : correct_count / len(x_test), 'run_time_sec' : float(test_duration)}]
+    if opt_set.opt_test:
+        if testconfig['detailed_comparison']:
+            # add softmax layer
+            probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
+            prob_ret = probability_model(x_test)
+            
+            # calc accuracy
+            correct_count = 0
+            for index,ret in enumerate(prob_ret):
+                # print(ret,np.argmax(ret),y_test[index])
+                if np.argmax(ret) == y_test[index]:
+                    correct_count += 1
+            test_duration = time.time() - test_start_time
+            return [{'avg_acc' : correct_count / len(x_test), 'run_time_sec' : float(test_duration)}]
+        else:
+            # evaluate model
+            ret = model.evaluate(x_test, y_test, verbose=2)
+            test_duration = time.time() - test_start_time
+            return [{'avg_acc' : ret[1], 'run_time_sec' : float(test_duration)}]
     else:
-        # evaluate model
-        ret = model.evaluate(x_test, y_test, verbose=2)
-        test_duration = time.time() - test_start_time
-        return [{'avg_acc' : ret[1], 'run_time_sec' : float(test_duration)}]
+        return [{}]
     
     
 

@@ -1,3 +1,4 @@
+from ast import arg
 import os
 import toml
 import argparse
@@ -14,6 +15,25 @@ KEY_DATASETS = "datasets"
 KEY_MODELS = "models"
 KEY_TESTCASES = "testcases"
 KEY_TESTRUN = "testrun"
+
+class OptionSet:
+
+    def __init__(self,opt_train,opt_test,opt_model_path,opt_save_per_epoch):
+
+        self.opt_train = opt_train
+        self.opt_test = opt_test
+        self.opt_model_path = opt_model_path
+        self.opt_save_per_epoch = opt_save_per_epoch
+
+        if self.opt_train == None and self.opt_test == None:
+            self.opt_train = True
+            self.opt_test = True
+
+        if self.opt_train == None and self.opt_test == True:
+            assert self.opt_model_path != None, "[error] please specify model path for testing if train==False"
+
+    def __str__(self) -> str:
+        return "opt_train:{}|opt_test:{}|opt_model_path:{}|opt_save_per_epoch:{}".format(self.opt_train,self.opt_test,self.opt_model_path,self.opt_save_per_epoch)
 
 class TestRun:
 
@@ -50,14 +70,14 @@ class TestRun:
     def out_json_name(self):
         return '%s/%s_%s.json'%(self.title,self.testcase_key,str(self.testindex))
 
-    def run_test(self):
+    def run_test(self,opt_set):
         from _scripts.load_dataset import DataLoad
         data = DataLoad.load_dataset(self.dataset_key,TestRun.LOADED_DATASETS[self.dataset_key])
         from _scripts.load_model import ModelLoad
         model = ModelLoad.load_model(self.model_key,TestRun.LOADED_MODELS[self.model_key])
         from _scripts.load_testcase import TestcaseLoad
         testfunc = TestcaseLoad.load_testcase(self.testcase_key,TestRun.LOADED_TESTCASES[self.testcase_key])
-        rets = testfunc(data=data,model_key=self.model_key,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key],result_path=PATH_TO_RESULT+'/'+self.title+"/")
+        rets = testfunc(data=data,model_key=self.model_key,model=model,testfunc=testfunc,testconfig=TestRun.LOADED_TESTCASES[self.testcase_key],result_path=PATH_TO_RESULT+'/'+self.title+"/",opt_set=opt_set)
         assert isinstance(rets,list)
         for index,ret in enumerate(rets):
             if not index < len(self.out_format):
@@ -77,7 +97,8 @@ def validate_toml(loaded_toml):
     assert KEY_TESTCASES in loaded_toml
     assert KEY_TESTRUN in loaded_toml
 
-def run_toml(tomlfile):
+def run_toml(tomlfile,opt_set):
+    # print(opt_train,opt_test,opt_model_path,opt_save_per_epoch)
     with open(tomlfile) as f:
         loaded_toml = toml.load(f)
         validate_toml(loaded_toml)
@@ -89,14 +110,20 @@ def run_toml(tomlfile):
         for testindex,testrun_dict in enumerate(loaded_toml[KEY_TESTRUN]):
             testrun = TestRun(testindex,testrun_dict[TestRun.KEY_DATASET],testrun_dict[TestRun.KEY_MODEL],testrun_dict[TestRun.KEY_TESTCASE],testrun_dict[TestRun.KEY_OUTFORMAT])
             print("[info] running {}".format(testrun))
-            testrun.run_test()
+            testrun.run_test(opt_set)
         print("[info] testrun {} with title {} done !!!".format(f.name,loaded_toml[KEY_TITLE]))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t","--toml",required=True,help="toml files of testcase e.g. abc.toml,def.toml,ghl.toml")
+    parser.add_argument("-train",required=False,default=None,help="set the testcase to only train the model",action='store_true')
+    parser.add_argument("-test",required=False,default=None,help="set the testcase to only to test the specified model path",action='store_true')
+    parser.add_argument("-m","--model_path",required=False,default=None,help="specify the model path for training/testing (compulsory for testing if train==False)")
+    parser.add_argument("-s","--save_per_epoch",required=False,help="save model output per epoch of training",action='store_true')
     args = parser.parse_args()
     tomls_to_run = args.toml.split(",")
     
+    opt_set = OptionSet(args.train,args.test,args.model_path,args.save_per_epoch)
+
     for tomlfile in tomls_to_run:
-        run_toml(tomlfile)
+        run_toml(tomlfile,opt_set)

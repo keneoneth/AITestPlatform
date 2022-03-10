@@ -42,11 +42,15 @@ def mytest(**args):
     model = args["model"]
     testconfig = args["testconfig"]
     result_path = args["result_path"]
-
+    
     # forward model
     num_classes = 10 #digit 0~9
-    if model_key in ["googlenet_model","googlenet_model"]:
+    if model_key in ["googlenet_model"]:
         model = model.forward(num_classes,tf.keras.Input(shape=tuple(testconfig['input_shape'])))
+    elif model_key in ["resnet_model"]:
+        model = model.construct(testconfig["resnet_layer"]).forward(10,tf.keras.Input(shape=tuple(testconfig['input_shape'])))
+    elif model_key in ["densenet_model"]:
+        model = model.construct(testconfig["densenet_layer"]).forward(10,tf.keras.Input(shape=tuple(testconfig['input_shape'])))
     else:
         model = model.forward(num_classes)
     # set loss function
