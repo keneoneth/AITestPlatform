@@ -10,6 +10,7 @@ def mytest(**args):
     data = args["data"]
     model = args["model"]
     testconfig = args["testconfig"]
+    result_path = args["result_path"]
     opt_set = args["opt_set"]
     
     
@@ -26,11 +27,19 @@ def mytest(**args):
     x_train, x_test, y_train, y_test = train_test_split(data['x'] / 255.0, data['y'], test_size=testconfig['testsize'], random_state=42)
     print("len(x_train),len(y_train):",len(x_train),len(y_train))
     
+    # Create a callback that saves the model's weights every 5 epochs
+    # https://medium.com/@italojs/saving-your-weights-for-each-epoch-keras-callbacks-b494d9648202
+    
+    if opt_set.opt_model_path:
+        model = tf.keras.models.load_model(opt_set.opt_model_path)
+
     # fit model
-    model.fit(x_train, y_train, epochs=testconfig['epochs'])
+    if opt_set.opt_train:
+        model.fit(x_train, y_train, epochs=testconfig['epochs'],callbacks=opt_set.get_saveweight_cb(result_path+'model_{epoch:02d}_{loss:.2f}.h5'))
 
     # print model summary
     print(model.summary())
+    model.save(result_path+'final_model.h5',save_format='h5')
 
     if opt_set.opt_test:
         if testconfig['detailed_comparison']:

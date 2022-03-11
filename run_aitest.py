@@ -4,6 +4,7 @@ import toml
 import argparse
 import json
 
+
 PATH_TO_TESTRUN = "./testrun/"
 PATH_TO_TESTCASE = "./testcases/"
 PATH_TO_MODEL = "./models/"
@@ -34,6 +35,19 @@ class OptionSet:
 
     def __str__(self) -> str:
         return "opt_train:{}|opt_test:{}|opt_model_path:{}|opt_save_per_epoch:{}".format(self.opt_train,self.opt_test,self.opt_model_path,self.opt_save_per_epoch)
+
+    @staticmethod
+    def get_saveweight_cb(result_path,save_best_only=True,monitor='loss'):
+        import tensorflow as tf
+        return tf.keras.callbacks.ModelCheckpoint(
+            filepath=result_path,
+            verbose=1,
+            save_best_only=save_best_only,
+            mode='auto',
+            save_weights_only=True,
+            monitor=monitor,
+            period=1
+        )
 
 class TestRun:
 
