@@ -35,7 +35,7 @@ def mytest(**args):
 
     # fit model
     if opt_set.opt_train:
-        model.fit(x_train, y_train, epochs=testconfig['epochs'],callbacks=opt_set.get_saveweight_cb(result_path+'model_{epoch:02d}_{loss:.2f}.h5'))
+        model.fit(x_train, y_train, epochs=testconfig['epochs'],callbacks=opt_set.get_saveweight_cb(result_path+'model_ep{epoch:02d}_loss{loss:.2f}.h5'))
 
     # print model summary
     print(model.summary())
