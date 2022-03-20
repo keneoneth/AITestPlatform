@@ -123,16 +123,19 @@ class ResNet():
             for i in range(1, num_blocks):
                 # layers.append(net_block(self.in_channels, out_channels, 1, None))
                 out = net_block(out_channels, 1, None).forward(out)
-            
+
             return out
+
 
         return forward
 
 
     def __init__(self, net_block, layers, strides):
         
+        self.net_block = net_block
+
         # self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.pad1 = tf.keras.layers.ZeroPadding2D(padding=(3, 3))
+        self.pad1 = tf.keras.layers.ZeroPadding2D(padding=(0, 0))
         self.conv1 = tf.keras.layers.Conv2D(filters=64, kernel_size=7, strides=(2,2), activation=None, padding='SAME')
 
         # self.bn1 = nn.BatchNorm2d(64)
@@ -144,10 +147,10 @@ class ResNet():
         # self.maxpooling = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.maxpooling = tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2,2), padding='SAME')
 
-        self.layer1 = self.net_block_layer(net_block, 64, layers[0], stride=strides[0])
-        self.layer2 = self.net_block_layer(net_block, 128, layers[1], stride=strides[1])
-        self.layer3 = self.net_block_layer(net_block, 256, layers[2], stride=strides[2])
-        self.layer4 = self.net_block_layer(net_block, 512, layers[3], stride=strides[3])
+        self.layer1 = self.net_block_layer(self.net_block, 64, layers[0], stride=strides[0])
+        self.layer2 = self.net_block_layer(self.net_block, 128, layers[1], stride=strides[1])
+        self.layer3 = self.net_block_layer(self.net_block, 256, layers[2], stride=strides[2])
+        self.layer4 = self.net_block_layer(self.net_block, 512, layers[3], stride=strides[3])
 
         # self.avgpooling = nn.AvgPool2d(7, stride=1)
         self.avgpooling = tf.keras.layers.AveragePooling2D(pool_size=(7, 7), strides=(1,1), data_format=None)
@@ -167,7 +170,6 @@ class ResNet():
 
     def forward(self,num_classes,sample_input):
         x = self.pad1(sample_input)
-        x = self.pad1(x)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -207,6 +209,6 @@ mymodel = ResNetStruct()
 
 if __name__ == "__main__":
     sample_input = tf.keras.Input(shape=(224,224,3)) #input_shape = [224,224,3] #H,W,C
-    out = mymodel.construct(50).forward(10,sample_input)
+    out = mymodel.construct(18).forward(10,sample_input)
     print(out.summary())
 
