@@ -51,7 +51,7 @@ class bottleneck_block():
     def __init__(self, out_channels, stride, downsample):
 
         # self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1, bias=False)
-        self.conv1 = tf.keras.layers.Conv2D(filters=out_channels, kernel_size=1, strides=(stride,stride), activation=None, padding='SAME')
+        self.conv1 = tf.keras.layers.Conv2D(filters=out_channels, kernel_size=1, activation=None, padding='SAME')
 
         # self.bn1 = nn.BatchNorm2d(out_channels)
         self.bn1 = tf.keras.layers.BatchNormalization()
@@ -129,7 +129,7 @@ class ResNet():
         return forward
 
 
-    def __init__(self, net_block, layers):
+    def __init__(self, net_block, layers, strides):
         
         # self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
         self.pad1 = tf.keras.layers.ZeroPadding2D(padding=(3, 3))
@@ -144,10 +144,10 @@ class ResNet():
         # self.maxpooling = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.maxpooling = tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2,2), padding='SAME')
 
-        self.layer1 = self.net_block_layer(net_block, 64, layers[0])
-        self.layer2 = self.net_block_layer(net_block, 128, layers[1], stride=2)
-        self.layer3 = self.net_block_layer(net_block, 256, layers[2], stride=2)
-        self.layer4 = self.net_block_layer(net_block, 512, layers[3], stride=2)
+        self.layer1 = self.net_block_layer(net_block, 64, layers[0], stride=strides[0])
+        self.layer2 = self.net_block_layer(net_block, 128, layers[1], stride=strides[1])
+        self.layer3 = self.net_block_layer(net_block, 256, layers[2], stride=strides[2])
+        self.layer4 = self.net_block_layer(net_block, 512, layers[3], stride=strides[3])
 
         # self.avgpooling = nn.AvgPool2d(7, stride=1)
         self.avgpooling = tf.keras.layers.AveragePooling2D(pool_size=(7, 7), strides=(1,1), data_format=None)
@@ -187,26 +187,26 @@ class ResNet():
 class ResNetStruct:
 
     construct_map = {
-        18 : ResNet(basic_block, [2, 2, 2, 2]),
-        34 : ResNet(basic_block, [3, 4, 6, 3]),
-        50 : ResNet(bottleneck_block, [3, 4, 6, 3]),
-        101 : ResNet(bottleneck_block, [3, 4, 23, 3]),
-        152 : ResNet(bottleneck_block, [3, 8, 36, 3])
+        18 : (basic_block, [2, 2, 2, 2]),
+        34 : (basic_block, [3, 4, 6, 3]),
+        50 : (bottleneck_block, [3, 4, 6, 3]),
+        101 : (bottleneck_block, [3, 4, 23, 3]),
+        152 : (bottleneck_block, [3, 8, 36, 3])
     }
 
     def __init__(self):
         pass
 
-    def construct(self,num_layers):
+    def construct(self,num_layers,strides=[1,2,2,2]):
         assert num_layers in ResNetStruct.construct_map
-        model = ResNetStruct.construct_map[num_layers]
-        return model
+        config = ResNetStruct.construct_map[num_layers]
+        return ResNet(net_block=config[0],layers=config[1],strides=strides)
 
 mymodel = ResNetStruct()
 
 
 if __name__ == "__main__":
     sample_input = tf.keras.Input(shape=(224,224,3)) #input_shape = [224,224,3] #H,W,C
-    out = mymodel.construct(18).forward(10,sample_input)
+    out = mymodel.construct(50).forward(10,sample_input)
     print(out.summary())
 
