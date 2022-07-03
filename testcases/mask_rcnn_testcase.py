@@ -45,8 +45,10 @@ def get_my_metric(metric_name):
 
 def mytest(**args):
     
+    # set test start time
     test_start_time = time.time()
 
+    # unpack arguments
     data = args["data"]()
     model_key = args["model_key"]
     model = args["model"]
@@ -56,7 +58,7 @@ def mytest(**args):
     
 
     # forward model
-    model, anchors, output_len = model.forward(testconfig['num_classes'],tf.keras.Input(shape=tuple(testconfig['input_shape']),dtype=tf.float32),batch_size=testconfig['batch_size'])
+    model, anchor_layer, anchors, norm_anchors, output_len = model.forward(testconfig['num_classes'],tf.keras.Input(shape=tuple(testconfig['input_shape']),dtype=tf.float32),batch_size=testconfig['batch_size'])
 
     # set loss function
     loss = [None] * output_len
@@ -64,11 +66,6 @@ def mytest(**args):
     optimizer = tf.keras.optimizers.SGD(
         lr=testconfig['learning_rate'], momentum=testconfig['momentum'],
         clipnorm=testconfig['gradient_clip_norm'])
-    # https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Adam
-    # optimizer = tf.keras.optimizers.Adam(
-    #     learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
-    #     name='Adam'
-    # )
 
     # Add Losses
     # First, clear previously set losses to avoid duplication
@@ -125,8 +122,7 @@ def mytest(**args):
     print("model_key",model_key)
 
     if opt_set.opt_model_path:
-        model = tf.keras.models.load_model(opt_set.opt_model_path)
-    # return [{}]
+        model = tf.keras.models.load_model(opt_set.opt_model_path) #,custom_objects={'AnchorsLayer':anchor_layer})
 
     # start training model fit
     if opt_set.opt_train:
@@ -151,7 +147,7 @@ def mytest(**args):
 
     # print model summary
     print(model.summary())
-    model.save(result_path+'final_model.h5',save_format='h5')
+    model.save(result_path+'final_model.tf',save_format='tf')
 
     # evaluate model
     if opt_set.opt_test:

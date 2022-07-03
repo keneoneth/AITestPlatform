@@ -739,22 +739,19 @@ class MaskRCNN():
             return input_shape[0][:2] + self.pool_shape + (input_shape[2][-1], )
 
     class AnchorsLayer(tf.keras.layers.Layer):
-        def __init__(self, anchors, name="anchors", **kwargs):
+        def __init__(self, anchors=None, name="anchors", **kwargs):
             super(MaskRCNN.AnchorsLayer, self).__init__(name=name, **kwargs)
-            self.anchors = tf.Variable(anchors)
+            self.anchors = anchors
+            self.tf_anchors = tf.Variable(self.anchors)
 
         def call(self,dummy):
-            return self.anchors
-        
-        # def get_config(self):
-        #     config = super(MaskRCNN.AnchorsLayer, self).get_config()
-        #     return config
+            return self.tf_anchors
         
         def get_config(self):
             config = super().get_config().copy()
-            # config.update({
-            #     'anchors': self.anchors,
-            # })
+            config.update({
+                'anchors': self.anchors,
+            })
             return config
 
     class ROIAlignLayer(tf.keras.layers.Layer):
@@ -1461,8 +1458,9 @@ class MaskRCNN():
         print("anchors brdcst",(batch_size,) + norm_anchors_arr.shape)
 
         # anchors_arr.shape = [N, (y1, x1, y2, x2)] in normalized coordinates
-        anchor_layer = MaskRCNN.AnchorsLayer(norm_anchors,name="anchors")(input_image)
-        print("anchor_layer",anchor_layer.shape, norm_anchors)
+        anchor_layer = MaskRCNN.AnchorsLayer(norm_anchors,name="anchors")
+        anchor_layer_out = anchor_layer(input_image)
+        print("anchor_layer",anchor_layer_out.shape, norm_anchors)
 
         ### RPN
         rpn_class_logits, rpn_class, rpn_bbox = MaskRCNN.build_rpn_model(MaskRCNN.ANCHOR_STRIDE,len(MaskRCNN.ASPECT_RATIOS),MaskRCNN.CHANNEL_SIZE,rpn_feature_maps)
@@ -1473,7 +1471,7 @@ class MaskRCNN():
             proposal_count=MaskRCNN.POST_NMS_ROIS_TRAINING,
             nms_threshold=MaskRCNN.RPN_NMS_THRESHOLD,
             name="ROI",
-            config=rpn_config)([rpn_class, rpn_bbox, anchor_layer])
+            config=rpn_config)([rpn_class, rpn_bbox, anchor_layer_out])
         
         ## Class ID mask to mark class IDs supported by the dataset the image came from.
         active_class_ids = tf.keras.layers.Lambda(lambda x: MaskRCNN.parse_image_meta_graph(x)["active_class_ids"])(input_image_meta)
@@ -1588,7 +1586,7 @@ class MaskRCNN():
 
         #TODO: add multi GPU support
 
-        return model, anchors_arr, len(outputs)
+        return model, MaskRCNN.AnchorsLayer, anchors_arr, norm_anchors, len(outputs)
 
     # def compile(self,optimizer):
         
