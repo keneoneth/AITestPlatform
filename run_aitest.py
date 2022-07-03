@@ -19,12 +19,11 @@ KEY_TESTRUN = "testrun"
 
 class OptionSet:
 
-    def __init__(self,opt_train,opt_test,opt_model_path,opt_save_per_epoch):
+    def __init__(self,opt_train,opt_test,opt_model_path):
 
         self.opt_train = opt_train
         self.opt_test = opt_test
         self.opt_model_path = opt_model_path
-        self.opt_save_per_epoch = opt_save_per_epoch
 
         if self.opt_train == None and self.opt_test == None:
             self.opt_train = True
@@ -133,11 +132,10 @@ if __name__ == "__main__":
     parser.add_argument("-train",required=False,default=None,help="set the testcase to only train the model",action='store_true')
     parser.add_argument("-test",required=False,default=None,help="set the testcase to only to test the specified model path",action='store_true')
     parser.add_argument("-m","--model_path",required=False,default=None,help="specify the model path for training/testing (compulsory for testing if train==False)")
-    parser.add_argument("-s","--save_per_epoch",required=False,help="save model output per epoch of training",action='store_true')
     args = parser.parse_args()
     tomls_to_run = args.toml.split(",")
     
-    opt_set = OptionSet(args.train,args.test,args.model_path,args.save_per_epoch)
+    opt_set = OptionSet(args.train,args.test,args.model_path)
 
     for tomlfile in tomls_to_run:
         run_toml(tomlfile,opt_set)

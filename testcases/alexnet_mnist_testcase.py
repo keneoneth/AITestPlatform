@@ -35,6 +35,8 @@ def mytest(**args):
     data = args["data"]
     model = args["model"]
     testconfig = args["testconfig"]
+    result_path = args["result_path"]
+    opt_set = args["opt_set"]
     
     # compile model
     num_classes = 10 #digit 0~9
@@ -68,78 +70,87 @@ def mytest(**args):
     val_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
     test_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
+    if opt_set.opt_model_path:
+        model = tf.keras.models.load_model(opt_set.opt_model_path)
+
     # start training
-    for epoch in range(testconfig['epochs']):
-        print("\nStart of epoch %d" % (epoch,))
-        start_time = time.time()
-        # Iterate over the batches of the dataset.
-        for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
-            #enlarge and batch data
-            batch_x = batch_normalize_enlarge_imgs(x_batch_train,testconfig['input_shape'],batch_index=0)
-            batch_y = batch_npy(y_batch_train,batch_index=0)
-            # print("ck",batch_x.shape,batch_y.shape)
-            # Open a GradientTape to record the operations run
-            # during the forward pass, which enables auto-differentiation.
-            with tf.GradientTape() as tape:
-                # Run the forward pass of the layer.
-                # The operations that the layer applies
-                # to its inputs are going to be recorded
-                # on the GradientTape.
-                logits = model(batch_x, training=True)  # Logits for this minibatch
-                # Compute the loss value for this minibatch.
-                loss_value = loss_fn(batch_y, logits)
-            # Use the gradient tape to automatically retrieve
+    if opt_set.opt_train:
+        for epoch in range(testconfig['epochs']):
+            print("\nStart of epoch %d" % (epoch,))
+            start_time = time.time()
+            # Iterate over the batches of the dataset.
+            for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
+                #enlarge and batch data
+                batch_x = batch_normalize_enlarge_imgs(x_batch_train,testconfig['input_shape'],batch_index=0)
+                batch_y = batch_npy(y_batch_train,batch_index=0)
+                # print("ck",batch_x.shape,batch_y.shape)
+                # Open a GradientTape to record the operations run
+                # during the forward pass, which enables auto-differentiation.
+                with tf.GradientTape() as tape:
+                    # Run the forward pass of the layer.
+                    # The operations that the layer applies
+                    # to its inputs are going to be recorded
+                    # on the GradientTape.
+                    logits = model(batch_x, training=True)  # Logits for this minibatch
+                    # Compute the loss value for this minibatch.
+                    loss_value = loss_fn(batch_y, logits)
+                # Use the gradient tape to automatically retrieve
 
-            # the gradients of the trainable variables with respect to the loss.
-            grads = tape.gradient(loss_value, model.trainable_weights)
+                # the gradients of the trainable variables with respect to the loss.
+                grads = tape.gradient(loss_value, model.trainable_weights)
 
-            # Run one step of gradient descent by updating
-            # the value of the variables to minimize the loss.
-            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+                # Run one step of gradient descent by updating
+                # the value of the variables to minimize the loss.
+                optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
-            # Log every 200 batches.
-            if step % 200 == 0:
-                print(
-                    "Training loss (for one batch) at step %d: %.4f"
-                    % (step, float(loss_value))
-                )
-                print("Seen so far: %s samples" % ((step + 1) * batch_size))
+                # Log every 200 batches.
+                if step % 200 == 0:
+                    print(
+                        "Training loss (for one batch) at step %d: %.4f"
+                        % (step, float(loss_value))
+                    )
+                    print("Seen so far: %s samples" % ((step + 1) * batch_size))
+                    model.save(result_path+'model_ep{epoch:02d}_loss{loss:.2f}.h5'.format(epoch=step, loss=float(loss_value)),save_format='h5')
 
-        # Display metrics at the end of each epoch.
-        train_acc = train_acc_metric.result()
-        print("Training acc over epoch: %.4f" % (float(train_acc),))
+            # Display metrics at the end of each epoch.
+            train_acc = train_acc_metric.result()
+            print("Training acc over epoch: %.4f" % (float(train_acc),))
 
-        # Reset training metrics at the end of each epoch
-        train_acc_metric.reset_states()
+            # Reset training metrics at the end of each epoch
+            train_acc_metric.reset_states()
 
-        # Run a validation loop at the end of each epoch.
-        for x_batch_val, y_batch_val in val_dataset:
-            #enlarge and batch data
-            batch_x = batch_normalize_enlarge_imgs(x_batch_val,testconfig['input_shape'],batch_index=0)
-            batch_y = batch_npy(y_batch_val,batch_index=0)
+            # Run a validation loop at the end of each epoch.
+            for x_batch_val, y_batch_val in val_dataset:
+                #enlarge and batch data
+                batch_x = batch_normalize_enlarge_imgs(x_batch_val,testconfig['input_shape'],batch_index=0)
+                batch_y = batch_npy(y_batch_val,batch_index=0)
 
-            val_logits = model(batch_x, training=False)
-            # Update val metrics
-            val_acc_metric.update_state(batch_y, val_logits)
-        val_acc = val_acc_metric.result()
-        val_acc_metric.reset_states()
-        print("Validation acc: %.4f" % (float(val_acc),))
-        print("Time taken: %.2fs" % (time.time() - start_time))
+                val_logits = model(batch_x, training=False)
+                # Update val metrics
+                val_acc_metric.update_state(batch_y, val_logits)
+            val_acc = val_acc_metric.result()
+            val_acc_metric.reset_states()
+            print("Validation acc: %.4f" % (float(val_acc),))
+            print("Time taken: %.2fs" % (time.time() - start_time))
     
     # print model summary
     print(model.summary())
+    model.save(result_path+'final_model.h5',save_format='h5')
 
     # evaluate model
-    for x_batch_test, y_batch_test in test_dataset:
-        #enlarge and batch data
-        batch_x = batch_normalize_enlarge_imgs(x_batch_test,testconfig['input_shape'],batch_index=0)
-        batch_y = batch_npy(y_batch_test,batch_index=0)
+    if opt_set.opt_test:
+        for x_batch_test, y_batch_test in test_dataset:
+            #enlarge and batch data
+            batch_x = batch_normalize_enlarge_imgs(x_batch_test,testconfig['input_shape'],batch_index=0)
+            batch_y = batch_npy(y_batch_test,batch_index=0)
 
-        test_logits = model(batch_x, training=False)
-        # Update val metrics
-        test_acc_metric.update_state(batch_y, test_logits)
-    test_acc = test_acc_metric.result()
+            test_logits = model(batch_x, training=False)
+            # Update val metrics
+            test_acc_metric.update_state(batch_y, test_logits)
+        test_acc = test_acc_metric.result()
 
-    test_duration = time.time() - test_start_time
+        test_duration = time.time() - test_start_time
 
-    return [{'avg_acc' : float(test_acc),'run_time_sec' : float(test_duration)}]
+        return [{'avg_acc' : float(test_acc),'run_time_sec' : float(test_duration)}]
+    else:
+        return [{}]
