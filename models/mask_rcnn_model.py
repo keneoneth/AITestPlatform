@@ -1571,11 +1571,11 @@ class MaskRCNN():
             rpn_class_logits, rpn_class, rpn_bbox,
             mrcnn_class_logits, mrcnn_class, mrcnn_bbox, mrcnn_mask, 
             rpn_rois, output_rois,
-            rpn_class_loss,  rpn_bbox_loss,
-            mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss
+
+            rpn_class_loss,  rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss
         ]
         #fake
-        outputs = [rpn_class_loss,rpn_bbox_loss,mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss]
+        # outputs = [rpn_class_loss,rpn_bbox_loss,mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss]
 
 
         # model = tf.keras.models.Model(inputs, outputs, name='mask_rcnn')
