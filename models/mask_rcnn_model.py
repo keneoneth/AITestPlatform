@@ -1448,7 +1448,7 @@ class MaskRCNN():
         ### step3: Anchors shape anchors (261888, 4)
         print("an shapes",P2.shape[1:3],P3.shape[1:3],P4.shape[1:3],P5.shape[1:3],P6.shape[1:3])
         feature_shapes = [P2.shape[1:3],P3.shape[1:3],P4.shape[1:3],P5.shape[1:3],P6.shape[1:3]]
-        anchors_arr = MaskRCNN.gen_anchors(input_image.shape[1:3],[(64, 64), (32, 32), (16, 16), (8, 8), (4, 4)],MaskRCNN.ANCHOR_AREAS,MaskRCNN.ASPECT_RATIOS,MaskRCNN.ANCHOR_STRIDE)
+        anchors_arr = MaskRCNN.gen_anchors(input_image.shape[1:3],feature_shapes,MaskRCNN.ANCHOR_AREAS,MaskRCNN.ASPECT_RATIOS,MaskRCNN.ANCHOR_STRIDE)
         # tf.print("tf anchors_arr", anchors_arr)
         norm_anchors_arr = MaskRCNN.norm_boxes(anchors_arr,input_image.shape[1:3])
         norm_anchors = np.broadcast_to(norm_anchors_arr, (batch_size,) + norm_anchors_arr.shape)  # insert batch_size in front of the anchors_arr.shape
