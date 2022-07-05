@@ -103,11 +103,11 @@ class MaskRCNN():
         h, w = shape[0], shape[1]
         scale = np.array([h - 1, w - 1, h - 1, w - 1])
         shift = np.array([0, 0, 1, 1])
-        print("norm_boxes",h,w,scale,shift)
+        # print("norm_boxes",h,w,scale,shift)
         return np.divide((boxes - shift), scale).astype(np.float32)
 
     @staticmethod
-    def generate_pyramid_anchors(feature_shapes,base_model_strides,anchor_stride,anchor_areas,aspect_ratios,print_debug=True):
+    def generate_pyramid_anchors(feature_shapes,base_model_strides,anchor_stride,anchor_areas,aspect_ratios,print_debug=False):
         if print_debug:
             print("feature_shapes",feature_shapes)
             print("base_model_strides",base_model_strides)
@@ -120,20 +120,12 @@ class MaskRCNN():
             f_shape = feature_shapes[index]
             f_stride = base_model_strides[index]
 
-            # area = w * h
-            # ratio[0]/ratio[1] = w/h
             widths = [math.sqrt(area*ratio[0]/ratio[1]) for ratio in aspect_ratios]
             heights = [area / width for width in widths]
-            if print_debug:
-                print('wh',widths,heights,f_shape,f_stride)
 
             shifts_y = np.arange(0, f_shape[0], anchor_stride) * f_stride
             shifts_x = np.arange(0, f_shape[1], anchor_stride) * f_stride
-            print('shifts_x,y',shifts_x.shape,shifts_y.shape,shifts_x[0],shifts_y[0])
             shifts_x, shifts_y = np.meshgrid(shifts_x, shifts_y)
-            
-            print("new shifts_y",shifts_y.shape,shifts_y[0])
-            print("new shifts_x",shifts_x.shape,shifts_x[0])
 
             box_widths, box_centers_x = np.meshgrid(widths, shifts_x)
             box_heights, box_centers_y = np.meshgrid(heights, shifts_y)
@@ -141,17 +133,15 @@ class MaskRCNN():
             box_centers = np.stack([box_centers_y, box_centers_x], axis=2).reshape([-1, 2])
             box_sizes = np.stack([box_heights, box_widths], axis=2).reshape([-1, 2])
 
-            print("new box_centers",box_centers.shape,box_centers[0])
-            print("new box_sizes",box_sizes.shape,box_sizes[0])
 
             boxes = np.concatenate([box_centers - 0.5 * box_sizes,
                             box_centers + 0.5 * box_sizes], axis=1)
 
-            print("boxes",boxes)
             anchors_arr.append(boxes)
 
         return np.concatenate(anchors_arr, axis=0)
 
+    #TODO: gen anchors with cache
     @staticmethod
     def gen_anchors(image_shape,feature_shapes,anchor_areas,aspect_ratios,anchor_stride):
         # anchor_areas: from paper for P2,P3,P4,P5,P6
@@ -161,12 +151,13 @@ class MaskRCNN():
         #     self._anchor_cache = {}
         # if str(tuple(image_shape)) in self._anchor_cache:
         #     return self._anchor_cache[str(tuple(image_shape))]
-        print("[info] gen anchors ...")
-        print("image_shape",image_shape)
-        print("feature_shapes",feature_shapes)
-        print("anchor_areas",anchor_areas)
-        print("aspect_ratios",aspect_ratios)
-        print("anchor_stride",anchor_stride)
+
+        # print("[info] gen anchors ...")
+        # print("image_shape",image_shape)
+        # print("feature_shapes",feature_shapes)
+        # print("anchor_areas",anchor_areas)
+        # print("aspect_ratios",aspect_ratios)
+        # print("anchor_stride",anchor_stride)
 
         # Generate Anchors
         anchors_arr = MaskRCNN.generate_pyramid_anchors(
@@ -178,40 +169,10 @@ class MaskRCNN():
             print_debug=True)
 
         return anchors_arr
-        # print("??? anchors_arr",anchors_arr.shape,anchors_arr)
 
         # self._anchor_cache[str(tuple(image_shape))] = anchors_arr
         
         # return self._anchor_cache[str(tuple(image_shape))]
-
-    # def gen_anchors(self,image_shape,feature_shapes,anchor_areas,aspect_ratios,anchor_stride):
-    #     # anchor_areas: from paper for P2,P3,P4,P5,P6
-    #     # aspect_ratios: from paper
-    #     # Cache anchors and reuse if image shape is the same
-    #     if not hasattr(self, "_anchor_cache"):
-    #         self._anchor_cache = {}
-    #     if str(tuple(image_shape)) in self._anchor_cache:
-    #         return self._anchor_cache[str(tuple(image_shape))]
-    #     print("[info] gen anchors ...")
-    #     print("image_shape",image_shape)
-    #     print("feature_shapes",feature_shapes)
-    #     print("anchor_areas",anchor_areas)
-    #     print("aspect_ratios",aspect_ratios)
-    #     print("anchor_stride",anchor_stride)
-
-    #     # Generate Anchors
-    #     anchors_arr = MaskRCNN.generate_pyramid_anchors(
-    #         feature_shapes,
-    #         MaskRCNN.BASE_MODEL_STRIDES + [MaskRCNN.P6_STRIDE],
-    #         anchor_stride,
-    #         anchor_areas,
-    #         aspect_ratios,
-    #         print_debug=True)
-    #     print("??? anchors_arr",anchors_arr.shape,anchors_arr)
-
-    #     self._anchor_cache[str(tuple(image_shape))] = anchors_arr
-        
-    #     return self._anchor_cache[str(tuple(image_shape))]
 
     @staticmethod
     def rpn_graph(p_index, feature_map, anchors_per_location, anchor_stride):
@@ -233,24 +194,23 @@ class MaskRCNN():
         # TODO: check if stride of 2 causes alignment issues if the feature map
         # is not even.
         # Shared convolutional base of the RPN
-        print("fm",feature_map)
-        print("anchors_per_location",anchors_per_location)
+        # print("fm",feature_map)
+        # print("anchors_per_location",anchors_per_location)
         # First, a 3 x 3 convolution with 512 units is applied to the backbone feature map as shown in Figure 1, 
         # to give a 512-d feature map for every location. This is followed by two sibling layers: a 1 x 1 convolution 
         # layer with 18 units for object classification, and a 1 x 1 convolution with 36 units for bounding box regression.
         # safer to use 2x units for classification?
 
         shared = tf.keras.layers.Conv2D(512, (3, 3), padding='same', activation=tf.keras.activations.relu, strides=anchor_stride, name='rpn_conv_shared_%d'%p_index)(feature_map)
-        print('shared shape',shared.shape)
+        # print('shared shape',shared.shape)
 
         # Anchor Score. [batch, height, width, anchors per location * 2].
         x = tf.keras.layers.Conv2D(2 * anchors_per_location, (1, 1), padding='valid', activation='linear', name='rpn_class_raw_%d'%p_index)(shared)
 
-        print('x shape',x.shape)
+        # print('x shape',x.shape)
         # Reshape to [batch, anchors, 2]
         rpn_class_logits = tf.keras.layers.Lambda(lambda t: tf.reshape(t, [tf.shape(t)[0], -1, 2]))(x)
-        # rpn_class_logits = tf.reshape(x, [tf.shape(x)[0], -1, 2])
-        print('rpn_class_logits shape',rpn_class_logits.shape)
+        # print('rpn_class_logits shape',rpn_class_logits.shape)
 
         # Softmax on last dimension of BG/FG.
         # https://stackoverflow.com/questions/34968722/how-to-implement-the-softmax-function-in-python
@@ -259,12 +219,11 @@ class MaskRCNN():
         # Bounding box refinement. [batch, H, W, anchors per location * depth]
         # where depth is [x, y, log(w), log(h)]
         x2 = tf.keras.layers.Conv2D(4 * anchors_per_location, (1, 1), padding="valid", activation='linear', name='rpn_bbox_pred_%d'%p_index)(shared)
+        # print('x2 shape',x2.shape)
 
-        print('x2 shape',x2.shape)
         # Reshape to [batch, anchors, 4]
         rpn_bbox = tf.keras.layers.Lambda(lambda t: tf.reshape(t, [tf.shape(t)[0], -1, 4]))(x2)
-        # rpn_bbox = tf.reshape(x2, [tf.shape(x2)[0], -1, 4])
-        print('rpn_bbox shape',rpn_bbox.shape)
+        # print('rpn_bbox shape',rpn_bbox.shape)
 
         return [rpn_class_logits, rpn_probs, rpn_bbox]
 
@@ -288,7 +247,6 @@ class MaskRCNN():
         # Loop through pyramid layers
         layer_outputs = []  # list of lists
         for p_index, p in enumerate(rpn_feature_maps):
-            print("p.shape",p.shape)
 
             # input_feature_map = tf.keras.Input(shape=tuple([p.shape[1],p.shape[2],p.shape[3]]), name="input_rpn_feature_map")
             outputs = MaskRCNN.rpn_graph(p_index, p, anchors_per_location, anchor_stride)
@@ -302,10 +260,7 @@ class MaskRCNN():
         # of outputs across levels.
         # e.g. [[a1, b1, c1], [a2, b2, c2]] => [[a1, a2], [b1, b2], [c1, c2]]
         output_names = ["rpn_class_logits", "rpn_class", "rpn_bbox"]
-        print("len(layer_outputs)",len(layer_outputs))
-        
         outputs = list(zip(*layer_outputs))
-        print("len(outputs)",len(outputs))
         outputs = [tf.keras.layers.Concatenate(axis=1, name=n)(list(o)) for o, n in zip(outputs, output_names)]
 
         return outputs
@@ -556,7 +511,7 @@ class MaskRCNN():
                             name='mrcnn_bbox_fc')(shared)
         # Reshape to [batch, num_rois, NUM_CLASSES, (dy, dx, log(dh), log(dw))]
         s = tf.keras.backend.int_shape(x)  # not working
-        # print("check check check ", s)
+
         if s[1] == None:
             mrcnn_bbox = tf.keras.layers.Reshape((-1, num_classes, 4), name="mrcnn_bbox")(x)
         else:
@@ -673,13 +628,12 @@ class MaskRCNN():
             # the fact that our coordinates are normalized here.
             # e.g. a 224x224 ROI (in pixels) maps to P4
             image_area = tf.cast(image_shape[0] * image_shape[1], tf.float32)
-            print(image_shape,image_area)
+
             roi_level = MaskRCNN.PyramidROIAlign.log2_graph(tf.sqrt(h * w) / (224.0 / tf.sqrt(image_area)))
-            print("ck 1st roi_level",roi_level)
+
             roi_level = tf.minimum(5, tf.maximum(2, 4 + tf.cast(tf.round(roi_level), tf.int32)))
-            print("ck 2nd roi_level",roi_level)
+
             roi_level = tf.squeeze(roi_level, 2)
-            print("ck 3rd roi_level",roi_level)
 
             # Loop through levels and apply ROI pooling to each. P2 to P5.
             pooled = []
@@ -1156,33 +1110,19 @@ class MaskRCNN():
         """
         # Positive anchors contribute to the loss, but negative and
         # neutral anchors (match value of 0 or -1) don't.
-        # print("ckck ori images_per_gpu",MaskRCNN.IMAGES_PER_GPU)
-        # print("ckck ori rpn_match",rpn_match)
-        # tf.print("tfdebug img_per_gpu",img_per_gpu)
-        # tf.print("tfdebug target_bbox",target_bbox)
-        # tf.print("tfdebug rpn_match",rpn_match)
-        # tf.print("tfdebug rpn_bbox",rpn_bbox)
+
         rpn_match = tf.squeeze(rpn_match, -1)
-        # print("ckck rpn_match",rpn_match)
         indices = tf.where(tf.equal(rpn_match, 1))
-        # print("ckck indices",indices)
 
         # Pick bbox deltas that contribute to the loss
-        # print("ckck ori rpn_bbox",rpn_bbox)
         rpn_bbox = tf.gather_nd(rpn_bbox, indices)
-        # print("ckck rpn_bbox",rpn_bbox)
 
         # Trim target bounding box deltas to the same length as rpn_bbox.
         batch_counts = tf.reduce_sum(tf.cast(tf.equal(rpn_match, 1), tf.int32), axis=1)
-        # print("ckck batch_counts",batch_counts)
-        # print("ckck ori target_bbox",target_bbox)
         target_bbox = MaskRCNN.batch_pack_graph(target_bbox, batch_counts, img_per_gpu)
-        # print("ckck target_bbox",target_bbox)
 
         loss = MaskRCNN.smooth_l1_loss(target_bbox, rpn_bbox)
-        # print("ckck ori loss",loss)
         loss = tf.keras.backend.switch(tf.size(loss) > 0, tf.keras.backend.mean(loss), tf.constant(0.0))
-        # print("ckck loss",loss)
 
 
         return loss
@@ -1292,6 +1232,7 @@ class MaskRCNN():
         loss = tf.keras.backend.mean(loss)
         return loss
 
+    # TODO: make all config in toml
     ### MODEL CONFIG
     CHANNEL_SIZE = 256
     LAYER_NUM = 4
@@ -1385,28 +1326,23 @@ class MaskRCNN():
         # 2. GT Boxes in pixels (zero padded)
         input_gt_boxes = tf.keras.Input(shape=[None, MaskRCNN.RPN_BOX_SIZE], name="input_gt_boxes", dtype=input_image.dtype)
         gt_boxes = tf.keras.layers.Lambda(lambda x: MaskRCNN.norm_boxes_graph(x))([input_gt_boxes,input_image])
-        # tf.print("tfdebug gt_boxes",gt_boxes, output_stream=sys.stderr)
+
         # USE_MINI_MASK is FALSE
         input_gt_masks = tf.keras.Input(shape=[input_image.shape[1],input_image.shape[2], None],name="input_gt_masks", dtype=bool)
-        print(">>> input_image",input_image,input_image.shape)
-        print(">>> input_rpn_match",input_rpn_match,input_rpn_match.shape)
-        print(">>> input_rpn_bbox",input_rpn_bbox)
-        print(">>> input_gt_class_ids",input_gt_class_ids)
-        print(">>> input_gt_boxes",input_gt_boxes)
-        print(">>> input_gt_masks",input_gt_masks)
         print(">>> batch_size",batch_size)
-        print("resnet_layer1",self.resnet_layer1)
+        print(">>> input_image.shape",input_image,input_image.shape)
+        print(">>> input_rpn_match.shape",input_rpn_match,input_rpn_match.shape)
+        print(">>> input_rpn_bbox.shape",input_rpn_bbox.shape)
+        print(">>> input_gt_class_ids.shape",input_gt_class_ids.shape)
+        print(">>> input_gt_boxes.shape",input_gt_boxes.shape)
+        print(">>> input_gt_masks.shape",input_gt_masks.shape)
+        
         ### step2: prepare layers
         c2 = self.resnet_layer1(self.basemodel,input_image)
-        print("c2",c2)
         c3 = self.resnet_layer2(self.basemodel,c2)
-        print("c3",c3)
         c4 = self.resnet_layer3(self.basemodel,c3)
-        print("c4",c4)
         c5 = self.resnet_layer4(self.basemodel,c4)
         
-        # print('input_image',input_image.shape,c2.shape,c3.shape,c4.shape,c5.shape)
-        print(self.conv1x1_layers[0])
         # M5 = self.conv1x1_layers[0](c5)
         # M4 = self.upsample_layers[0](M5) + self.conv1x1_layers[1](c4)
         # M3 = self.upsample_layers[1](M4) + self.conv1x1_layers[2](c3)
@@ -1420,7 +1356,6 @@ class MaskRCNN():
         # P6 = self.maxpooling(P5)
 
         # Top-down Layers
-        # TODO: add assert to varify feature map sizes match what's in config
         P5 = tf.keras.layers.Conv2D(256, (1, 1), name='fpn_c5p5')(c5)
         P4 = tf.keras.layers.Add(name="fpn_p4add")([
             tf.keras.layers.UpSampling2D(size=(2, 2), name="fpn_p5upsampled")(P5),
@@ -1446,21 +1381,15 @@ class MaskRCNN():
         
         
         ### step3: Anchors shape anchors (261888, 4)
-        print("an shapes",P2.shape[1:3],P3.shape[1:3],P4.shape[1:3],P5.shape[1:3],P6.shape[1:3])
         feature_shapes = [P2.shape[1:3],P3.shape[1:3],P4.shape[1:3],P5.shape[1:3],P6.shape[1:3]]
         anchors_arr = MaskRCNN.gen_anchors(input_image.shape[1:3],feature_shapes,MaskRCNN.ANCHOR_AREAS,MaskRCNN.ASPECT_RATIOS,MaskRCNN.ANCHOR_STRIDE)
         # tf.print("tf anchors_arr", anchors_arr)
         norm_anchors_arr = MaskRCNN.norm_boxes(anchors_arr,input_image.shape[1:3])
         norm_anchors = np.broadcast_to(norm_anchors_arr, (batch_size,) + norm_anchors_arr.shape)  # insert batch_size in front of the anchors_arr.shape
-        
-        print("anchors_arr",norm_anchors_arr,norm_anchors_arr.shape)
-        print("anchors",norm_anchors,norm_anchors.shape)
-        print("anchors brdcst",(batch_size,) + norm_anchors_arr.shape)
 
         # anchors_arr.shape = [N, (y1, x1, y2, x2)] in normalized coordinates
         anchor_layer = MaskRCNN.AnchorsLayer(norm_anchors,name="anchors")
         anchor_layer_out = anchor_layer(input_image)
-        print("anchor_layer",anchor_layer_out.shape, norm_anchors)
 
         ### RPN
         rpn_class_logits, rpn_class, rpn_bbox = MaskRCNN.build_rpn_model(MaskRCNN.ANCHOR_STRIDE,len(MaskRCNN.ASPECT_RATIOS),MaskRCNN.CHANNEL_SIZE,rpn_feature_maps)
@@ -1475,7 +1404,6 @@ class MaskRCNN():
         
         ## Class ID mask to mark class IDs supported by the dataset the image came from.
         active_class_ids = tf.keras.layers.Lambda(lambda x: MaskRCNN.parse_image_meta_graph(x)["active_class_ids"])(input_image_meta)
-        print(active_class_ids)
         
         # target_rois = rpn_rois # use rpn rois from rpn as target rois
 
@@ -1491,7 +1419,6 @@ class MaskRCNN():
         rois, target_class_ids, target_bbox, target_mask =\
             MaskRCNN.DetectionTargetLayer(detect_config, name="proposal_targets")([rpn_rois, input_gt_class_ids, gt_boxes, input_gt_masks])
 
-        # return
 
         ### Network HEADS
         fpn_config = {
@@ -1515,7 +1442,6 @@ class MaskRCNN():
         # return
 
         ### define Losses
-        print("input_rpn_bbox loss",input_rpn_bbox.shape,input_rpn_match.shape,rpn_bbox.shape)
         output_rois = tf.keras.layers.Lambda(lambda x: x * 1, name="output_rois")(rois)
         rpn_class_loss = tf.keras.layers.Lambda(lambda x: MaskRCNN.rpn_class_loss_graph(*x), name="rpn_class_loss")(
             [input_rpn_match, rpn_class_logits])
@@ -1533,32 +1459,32 @@ class MaskRCNN():
 
 
         ### define Model
-        print("input_image",input_image)
-        print("input_image_meta",input_image_meta)
-        print("input_rpn_match",input_rpn_match)
-        print("input_rpn_bbox",input_rpn_bbox)
-        print("input_gt_class_ids",input_gt_class_ids)
-        print("input_gt_boxes",input_gt_boxes)
-        print("input_gt_masks",input_gt_masks)
-        print()
-        print("rpn_class_logits",rpn_class_logits)
-        print("rpn_class",rpn_class)
-        print("rpn_bbox",rpn_bbox)
-        print("mrcnn_class_logits",mrcnn_class_logits)
-        print("mrcnn_class",mrcnn_class)
-        print("mrcnn_bbox",mrcnn_bbox)
-        print("mrcnn_mask",mrcnn_mask)
-        print("rpn_rois",rpn_rois)
-        print("output_rois",output_rois)
-        print("rpn_bbox_loss",rpn_bbox_loss)
-        print("mrcnn_class_loss",mrcnn_class_loss)
-        print("mrcnn_bbox_loss",mrcnn_bbox_loss)
-        print("mrcnn_mask_loss",mrcnn_mask_loss)
-        print()
-        print("target_class_ids",target_class_ids)
-        print("target_bbox",target_bbox)
-        print("active_class_ids",active_class_ids)
-        print("target_mask",target_mask)
+        # print("input_image",input_image)
+        # print("input_image_meta",input_image_meta)
+        # print("input_rpn_match",input_rpn_match)
+        # print("input_rpn_bbox",input_rpn_bbox)
+        # print("input_gt_class_ids",input_gt_class_ids)
+        # print("input_gt_boxes",input_gt_boxes)
+        # print("input_gt_masks",input_gt_masks)
+        # print()
+        # print("rpn_class_logits",rpn_class_logits)
+        # print("rpn_class",rpn_class)
+        # print("rpn_bbox",rpn_bbox)
+        # print("mrcnn_class_logits",mrcnn_class_logits)
+        # print("mrcnn_class",mrcnn_class)
+        # print("mrcnn_bbox",mrcnn_bbox)
+        # print("mrcnn_mask",mrcnn_mask)
+        # print("rpn_rois",rpn_rois)
+        # print("output_rois",output_rois)
+        # print("rpn_bbox_loss",rpn_bbox_loss)
+        # print("mrcnn_class_loss",mrcnn_class_loss)
+        # print("mrcnn_bbox_loss",mrcnn_bbox_loss)
+        # print("mrcnn_mask_loss",mrcnn_mask_loss)
+        # print()
+        # print("target_class_ids",target_class_ids)
+        # print("target_bbox",target_bbox)
+        # print("active_class_ids",active_class_ids)
+        # print("target_mask",target_mask)
 
         inputs = [input_image, input_image_meta, input_rpn_match, input_rpn_bbox, input_gt_class_ids, input_gt_boxes, input_gt_masks]
 
@@ -1572,33 +1498,13 @@ class MaskRCNN():
 
             rpn_class_loss,  rpn_bbox_loss, mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss
         ]
-        #fake
-        # outputs = [rpn_class_loss,rpn_bbox_loss,mrcnn_class_loss, mrcnn_bbox_loss, mrcnn_mask_loss]
 
 
-        # model = tf.keras.models.Model(inputs, outputs, name='mask_rcnn')
         model = tf.keras.models.Model(inputs, outputs, name='mask_rcnn')
-
-        # import keras
-        # import keras.models as KM
-        # model = KM.Model(inputs, outputs, name='mask_rcnn')
-
 
         #TODO: add multi GPU support
 
-        return model, MaskRCNN.AnchorsLayer, anchors_arr, norm_anchors, len(outputs)
-
-    # def compile(self,optimizer):
-        
-    #     self.keras_model.metrics_tensors = []
-
-    #     # Add Losses
-    #     # First, clear previously set losses to avoid duplication
-    #     self.keras_model._losses = []
-    #     self.keras_model._per_input_losses = {}
-    #     loss_names = [
-    #         "rpn_class_loss",  "rpn_bbox_loss",
-    #         "mrcnn_class_loss", "mrcnn_bbox_loss", "mrcnn_mask_loss"]
+        return model, anchors_arr, len(outputs)
         
 
 basemodel = ResNetStruct().construct(50,strides=MaskRCNN.BASE_MODEL_STRIDES,need_bn=True)

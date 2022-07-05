@@ -40,11 +40,7 @@ class basic_block():
             out = self.bn2(out)
 
         residual = self.downsample(sample_input) if self.downsample is not None else sample_input
-        # print(self.downsample is not None)
-        # print("samin",sample_input)
-        # print("residual",residual)
-        # print("out",out)
-
+        
         out += residual
         out = self.relu(out)
 
@@ -111,7 +107,7 @@ class ResNet():
 
         def forward(self,sample_input):
 
-            print(">>>>>> net_block_layer forward",self.in_channels,out_channels * net_block.expansion)
+            # print(">>>>>> net_block_layer forward",self.in_channels,out_channels * net_block.expansion)
 
             downsample = None
 
