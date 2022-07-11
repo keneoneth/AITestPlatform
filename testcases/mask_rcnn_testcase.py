@@ -103,8 +103,7 @@ def denorm_boxes(boxes, shape):
     return np.around(np.multiply(boxes, scale) + shift).astype(np.int32)
 
 
-def unmold_detections(detections, mrcnn_mask, original_image_shape,
-                        image_shape, window):
+def unmold_detections(detections, mrcnn_mask, original_image_shape, image_shape, window):
     """Reformats the detections of one image from the format of the neural
     network output to a format suitable for use in the rest of the
     application.
@@ -122,18 +121,29 @@ def unmold_detections(detections, mrcnn_mask, original_image_shape,
     scores: [N] Float probability scores of the class_id
     masks: [height, width, num_instances] Instance masks
     """
+    print("detections",detections.shape,detections)
+    print("mrcnn_mask",mrcnn_mask.shape,mrcnn_mask)
     #TODO: add back masks
     # How many detections do we have?
     # Detections array is padded with zeros. Find the first class_id == 0.
     zero_ix = np.where(detections[:, 4] == 0)[0]
     N = zero_ix[0] if zero_ix.shape[0] > 0 else detections.shape[0]
-    N = detections.shape[0]
+    #print("zero_ix",zero_ix.shape,detections.shape[0],zero_ix)
+    
+    N = detections.shape[0] # TEMP: print also background
 
     # Extract boxes, class_ids, scores, and class-specific masks
     boxes = detections[:N, :4]
     class_ids = detections[:N, 4].astype(np.int32)
     scores = detections[:N, 5]
-    # masks = mrcnn_mask[np.arange(N), :, :, class_ids]
+    idx = detections[:N,6]
+    print("idx",idx.shape,idx)
+    masks = np.take(mrcnn_mask,np.array(idx,dtype=np.uint32),axis=0)
+    print("class_ids",class_ids.shape,class_ids)
+    # masks =  np.take(masks,class_ids,axis=-1)
+    masks = masks[np.arange(N), :, :, class_ids]
+    print("masks",masks.shape,masks)
+    # 
 
     # Translate normalized coordinates in the resized image to pixel
     # coordinates in the original image before resizing
@@ -161,17 +171,17 @@ def unmold_detections(detections, mrcnn_mask, original_image_shape,
         boxes = np.delete(boxes, exclude_ix, axis=0)
         class_ids = np.delete(class_ids, exclude_ix, axis=0)
         scores = np.delete(scores, exclude_ix, axis=0)
-        # masks = np.delete(masks, exclude_ix, axis=0)
+        masks = np.delete(masks, exclude_ix, axis=0)
         N = class_ids.shape[0]
 
     # Resize masks to original image size and set boundary threshold.
     full_masks = []
-    # for i in range(N):
-    #     # Convert neural network mask to full size mask
-    #     full_mask = unmold_mask(masks[i], boxes[i], original_image_shape)
-    #     full_masks.append(full_mask)
-    # full_masks = np.stack(full_masks, axis=-1)\
-    #     if full_masks else np.empty(original_image_shape[:2] + (0,))
+    for i in range(N):
+        # Convert neural network mask to full size mask
+        full_mask = unmold_mask(masks[i], boxes[i], original_image_shape)
+        full_masks.append(full_mask)
+    full_masks = np.stack(full_masks, axis=-1)\
+        if full_masks else np.empty(original_image_shape[:2] + (0,))
 
     return boxes, class_ids, scores, full_masks
 
@@ -360,7 +370,7 @@ def refine_detections_graph(rois, probs, deltas, window, config):
         # N = class_ids.shape[0]
 
     # Filter out background boxes
-    keep = np.where(class_ids >= 0)[0] #[:, 0]
+    keep = np.where(class_ids >= 0)[0] #[:, 0] #TEMP: get also class id == 0
     print('keep',len(keep),keep)
     keep = set(keep.tolist())
     # Filter out low confidence boxes
@@ -474,10 +484,11 @@ def refine_detections_graph(rois, probs, deltas, window, config):
     print(pre_detections[1].shape)
     print(pre_detections[2].shape)
 
+    assert len(pre_detections[0]) == len(nms_keep)
     detections = []
     for i in range(len(pre_detections[0])):
         detections.append(np.array([pre_detections[0][i][0],pre_detections[0][i][1],pre_detections[0][i][2],pre_detections[0][i][3],
-            pre_detections[1][i],pre_detections[2][i]]))
+            pre_detections[1][i],pre_detections[2][i],nms_keep[i]]))
 
     # Pad with zeros if detections < DETECTION_MAX_INSTANCES
     # gap = config['DETECTION_MAX_INSTANCES'] - np.shape(detections)[0]
@@ -516,11 +527,9 @@ def conv_to_detections(rois,mrcnn_class,mrcnn_bbox,image_meta):
         config['IMAGES_PER_GPU'])
 
     # Reshape output
-    # [batch, num_detections, (y1, x1, y2, x2, class_id, class_score)] in
+    # [batch, num_detections, (y1, x1, y2, x2, class_id, class_score, roi_index)] in
     # normalized coordinates
-    return np.reshape(
-        detections_batch,
-        [config['BATCH_SIZE'], -1, 6])
+    return np.reshape(detections_batch,[config['BATCH_SIZE'], -1, 7])
 
 
 def single_img_test(data,test_generator,model,testconfig):
@@ -613,12 +622,12 @@ def single_img_test(data,test_generator,model,testconfig):
     print("window",window.shape)
 
     final_rois, final_class_ids, final_scores, final_masks =\
-            unmold_detections(detections[0], mrcnn_mask, ori_img_shape, mold_img_shape,window)
+            unmold_detections(detections[0], mrcnn_mask[0], ori_img_shape, mold_img_shape,window)
 
     print("final_rois",final_rois.shape,final_rois)
     print("final_class_ids",final_class_ids.shape,final_class_ids)
     print("final_scores",final_scores.shape,final_scores)
-    # print("final_masks",final_masks.shape,final_masks)
+    print("final_masks",final_masks.shape,final_masks)
 
     # test_img = np.array(np.array(inputs[0][0]) + np.array(testconfig["MEAN_PIXEL"]),dtype=np.int32)
     save_img(ori_img_arr,"single_img_test",final_rois)
