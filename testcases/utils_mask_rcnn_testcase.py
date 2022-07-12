@@ -107,7 +107,8 @@ def unmold_detections(detections, mrcnn_mask, original_image_shape, image_shape,
     zero_ix = np.where(detections[:, 4] == 0)[0]
     N = zero_ix[0] if zero_ix.shape[0] > 0 else detections.shape[0]
     
-    N = detections.shape[0] #TEMP: print also background
+    if N==0:
+        return np.array([]), np.array([]), np.array([]), np.array([])
 
     # Extract boxes, class_ids, scores, and class-specific masks
     boxes = detections[:N, :4]
@@ -325,7 +326,7 @@ def refine_detections_graph(rois, probs, deltas, window, config):
         # N = class_ids.shape[0]
 
     # Filter out background boxes
-    keep = np.where(class_ids >= 0)[0] #[:, 0] #TEMP: get also class id == 0
+    keep = np.where(class_ids > 0)[0] #[:, 0] #TEMP: get also class id == 0
     keep = set(keep.tolist())
     # Filter out low confidence boxes
     if config['DETECTION_MIN_CONFIDENCE']:
@@ -495,7 +496,6 @@ def save_img(arr,fname,recshapes,oplague_masks=None):
                 else:
                     ret = np.bitwise_or(*oplague_masks[row][col])
                 if ret:
-                    print(row,col,im.size) 
                     # Image lib uses x=col,y=row
                     rgba = list(im.getpixel((col,row)))
                     rgba[3] = 18
@@ -570,6 +570,6 @@ def single_img_test(data,test_generator,model,testconfig):
     print("final_scores",final_scores.shape,final_scores)
     print("final_masks",final_masks.shape)
 
-    save_img(ori_img_arr,"single_img_test",final_rois,final_masks)
+    save_img(ori_img_arr,"single_img_test_"+str(img_id),final_rois,final_masks)
 
     return
