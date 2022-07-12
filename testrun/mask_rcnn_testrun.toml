@@ -1,0 +1,56 @@
+title = "MaskRCNN Example"
+
+[datasets]
+[datasets.lolimg]  #name of dataset folder under 'datasets' folder
+loadfname = "custom_load"
+loadobj = "LOLImgLoader"
+
+[models]
+[models.mask_rcnn_model] #name of python script under 'models' folder
+modelname = "mymodel"
+
+[testcases]
+[testcases.mask_rcnn_testcase] #name of testcase to run under 'testcases' folder
+testfunc = "mytest"
+num_classes = 2 #BG,TEXT
+input_shape = [256,256,3] #H,W,C
+IMAGE_RESIZE_MODE = "square"
+# square: Resize and pad with zeros to get a square image of size [max_dim, max_dim].
+IMAGE_MIN_DIM = 256 #set consistent with input shape
+IMAGE_MAX_DIM = 256 #set consistent with input shape
+# Minimum scaling ratio. Checked after MIN_IMAGE_DIM and can force further
+# up scaling. For example, if set to 2 then images are scaled up to double
+# the width and height, or more, even if MIN_IMAGE_DIM doesn't require it.
+# However, in 'square' mode, it can be overruled by IMAGE_MAX_DIM.
+IMAGE_MIN_SCALE = 0
+
+### training params
+shuffle = true
+batch_size = 1
+epochs = 1 #5
+steps_per_epoch = 100 #1000
+validation_steps = 50 #100
+### optimizer
+learning_rate = 0.001
+momentum = 0.9
+gradient_clip_norm = 2.0
+
+### others
+# How many anchors per image to use for RPN training
+RPN_TRAIN_ANCHORS_PER_IMAGE = 256
+RPN_BBOX_STD_DEV = [0.1, 0.1, 0.2, 0.2]
+# Maximum number of ground truth instances to use in one image
+MAX_GT_INSTANCES = 100
+# Image mean (RGB) TODO: update according to image set
+MEAN_PIXEL = [123.7, 116.8, 103.9]
+# Weight decay regularization # not used for now
+WEIGHT_DECAY = 0.0001
+# Loss weights for more precise optimization.
+LOSS_WEIGHTS = {"rpn_class_loss" = 1.0,"rpn_bbox_loss" = 1.0,"mrcnn_class_loss" = 1.0,"mrcnn_bbox_loss" = 1.0,"mrcnn_mask_loss" = 1.0}
+
+
+[[testrun]]
+dataset = "lolimg"
+model = "mask_rcnn_model"
+testcase = "mask_rcnn_testcase"
+out_format = ["json"]
