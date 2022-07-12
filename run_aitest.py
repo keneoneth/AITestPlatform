@@ -129,8 +129,8 @@ def run_toml(tomlfile,opt_set):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-t","--toml",required=True,help="toml files of testcase e.g. abc.toml,def.toml,ghl.toml")
-    parser.add_argument("-train",required=False,default=None,help="set the testcase to only train the model",action='store_true')
-    parser.add_argument("-test",required=False,default=None,help="set the testcase to only to test the specified model path",action='store_true')
+    parser.add_argument("--train",required=False,default=None,help="set the testcase to only train the model",action='store_true')
+    parser.add_argument("--test",required=False,default=None,help="set the testcase to only to test the specified model path",action='store_true')
     parser.add_argument("-m","--model_path",required=False,default=None,help="specify the model path for training/testing (compulsory for testing if train==False)")
     args = parser.parse_args()
     tomls_to_run = args.toml.split(",")
