@@ -1,6 +1,4 @@
-from distutils.log import debug
-import tensorflow as tf
-# tf.compat.v1.disable_v2_behavior()
+import sys
 import math
 import numpy as np
 if __name__ == "__main__":
@@ -9,8 +7,10 @@ if __name__ == "__main__":
 else:
     from .resnet_model import ResNetStruct
     from . import utils
+import tensorflow as tf
+import logging
 
-import sys
+logging.getLogger().setLevel(logging.INFO)
 
 class MaskRCNN():
 
@@ -109,11 +109,7 @@ class MaskRCNN():
     @staticmethod
     def generate_pyramid_anchors(feature_shapes,base_model_strides,anchor_stride,anchor_areas,aspect_ratios,print_debug=False):
         if print_debug:
-            print("feature_shapes",feature_shapes)
-            print("base_model_strides",base_model_strides)
-            print("anchor_stride",anchor_stride)
-            print("anchor_areas",anchor_areas)
-            print("aspect_ratios",aspect_ratios)
+            logging.info(f'generate_pyramid_anchors feat_shps:{feature_shapes} base_mdl_strd:{base_model_strides} anc_strd:{anchor_stride} anchor_areas:{anchor_areas} aspect_ratios:{aspect_ratios}')
 
         anchors_arr = []
         for index,area in enumerate(anchor_areas):
@@ -152,13 +148,6 @@ class MaskRCNN():
         # if str(tuple(image_shape)) in self._anchor_cache:
         #     return self._anchor_cache[str(tuple(image_shape))]
 
-        # print("[info] gen anchors ...")
-        # print("image_shape",image_shape)
-        # print("feature_shapes",feature_shapes)
-        # print("anchor_areas",anchor_areas)
-        # print("aspect_ratios",aspect_ratios)
-        # print("anchor_stride",anchor_stride)
-
         # Generate Anchors
         anchors_arr = MaskRCNN.generate_pyramid_anchors(
             feature_shapes,
@@ -169,10 +158,6 @@ class MaskRCNN():
             print_debug=True)
 
         return anchors_arr
-
-        # self._anchor_cache[str(tuple(image_shape))] = anchors_arr
-        
-        # return self._anchor_cache[str(tuple(image_shape))]
 
     @staticmethod
     def rpn_graph(p_index, feature_map, anchors_per_location, anchor_stride):
@@ -194,8 +179,6 @@ class MaskRCNN():
         # TODO: check if stride of 2 causes alignment issues if the feature map
         # is not even.
         # Shared convolutional base of the RPN
-        # print("fm",feature_map)
-        # print("anchors_per_location",anchors_per_location)
         # First, a 3 x 3 convolution with 512 units is applied to the backbone feature map as shown in Figure 1, 
         # to give a 512-d feature map for every location. This is followed by two sibling layers: a 1 x 1 convolution 
         # layer with 18 units for object classification, and a 1 x 1 convolution with 36 units for bounding box regression.
@@ -307,7 +290,7 @@ class MaskRCNN():
         return overlaps
 
     @staticmethod
-    def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, train_rois_per_img, roi_positive_ratio, bbox_std_dev ,mask_shape):
+    def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, train_rois_per_img, roi_positive_ratio, bbox_std_dev, mask_shape, pos_iou_thres):
         """Generates detection targets for one image. Subsamples proposals and
         generates target class IDs, bounding box deltas, and masks for each.
 
@@ -328,6 +311,7 @@ class MaskRCNN():
 
         Note: Returned arrays might be zero padded if not enough target ROIs.
         """
+
         # Assertions
         asserts = [
             tf.Assert(tf.greater(tf.shape(proposals)[0], 0), [proposals], name="roi_assertion"),
@@ -359,13 +343,21 @@ class MaskRCNN():
         crowd_iou_max = tf.reduce_max(crowd_overlaps, axis=1)
         no_crowd_bool = (crowd_iou_max < 0.001)
 
+
         # Determine positive and negative ROIs
         roi_iou_max = tf.reduce_max(overlaps, axis=1)
         # 1. Positive ROIs are those with >= 0.5 IoU with a GT box
-        positive_roi_bool = (roi_iou_max >= 0.5)
+        ###CHECK this thres
+        pos_iou_thres = pos_iou_thres
+        positive_roi_bool = (roi_iou_max >= pos_iou_thres)
         positive_indices = tf.where(positive_roi_bool)[:, 0]
         # 2. Negative ROIs are those with < 0.5 with every GT box. Skip crowds.
-        negative_indices = tf.where(tf.logical_and(roi_iou_max < 0.5, no_crowd_bool))[:, 0]
+        negative_indices = tf.where(tf.logical_and(roi_iou_max < pos_iou_thres, no_crowd_bool))[:, 0]
+        # tf.print("roi_iou_max:",tf.shape(roi_iou_max),roi_iou_max, output_stream=sys.stdout)
+        # tf.print("positive_roi_bool:",tf.shape(positive_roi_bool),positive_roi_bool, output_stream=sys.stdout)
+        # tf.print("positive_indices:",tf.shape(positive_indices),positive_indices, output_stream=sys.stdout)
+        # tf.print("negative_indices:",tf.shape(negative_indices),negative_indices, output_stream=sys.stdout)
+        
 
         # Subsample ROIs. Aim for 33% positive
         # Positive ROIs
@@ -375,6 +367,8 @@ class MaskRCNN():
         # Negative ROIs. Add enough to maintain positive:negative ratio.
         r = 1.0 / roi_positive_ratio
         negative_count = tf.cast(r * tf.cast(positive_count, tf.float32), tf.int32) - positive_count
+        # tf.print("negative_count:",tf.shape(negative_count),negative_count, output_stream=sys.stdout)
+        # tf.print("positive_count:",tf.shape(positive_count),positive_count, output_stream=sys.stdout)
         negative_indices = tf.random.shuffle(negative_indices)[:negative_count]
         # Gather selected ROIs
         positive_rois = tf.gather(proposals, positive_indices)
@@ -437,6 +431,8 @@ class MaskRCNN():
         roi_gt_class_ids = tf.pad(roi_gt_class_ids, [(0, N + P)])
         deltas = tf.pad(deltas, [(0, N + P), (0, 0)])
         masks = tf.pad(masks, [[0, N + P], (0, 0), (0, 0)])
+
+        # tf.print("final roi_gt_class_ids",tf.shape(roi_gt_class_ids),roi_gt_class_ids,output_stream=sys.stdout)
 
         return rois, roi_gt_class_ids, deltas, masks
 
@@ -894,7 +890,7 @@ class MaskRCNN():
             """
             # Box Scores. Use the foreground class confidence. [Batch, num_rois, 1]
             scores = inputs[0][:, :, 1]
-            # print("[info] scores.shape ",scores.shape,np.array(inputs).shape)
+
             """
             >>> Why use foreground confidence only?
             >>> foreground means objects that appear in front of the background
@@ -915,13 +911,13 @@ class MaskRCNN():
             # Anchors
             anchors = inputs[2]
 
-            # Improve performance by trimming to top anchors by score
-            # and doing the rest on the smaller subset.
-            # print("[info] anchors shape",anchors.shape)
-            # print("[info] PRE_NMS_LIMIT ",self.config["PRE_NMS_LIMIT"])
+            
             """
             >>> Why do we need pre NMS limit?
+            # Improve performance by trimming to top anchors by score
+            # and doing the rest on the smaller subset.
             """
+
             pre_nms_limit = tf.minimum(self.pre_nms_limit, tf.shape(anchors)[1])
             # pre nms limit: ROIs kept after tf.nn.top_k and before non-maximum suppression
             # top_k: Finds values and indices of the k largest entries for the last dimension.
@@ -954,8 +950,9 @@ class MaskRCNN():
             def nms(boxes, scores):
                 indices = tf.image.non_max_suppression(
                     boxes, scores, self.proposal_count,
-                    self.nms_threshold, name="rpn_non_max_suppression")
+                    iou_threshold=self.nms_threshold, name="rpn_non_max_suppression")
                 proposals = tf.gather(boxes, indices)
+                tf.print(f"proposal layer nms prop_cnt:{self.proposal_count} prop_shp:{tf.shape(proposals)} nsm_thres:{self.nms_threshold}",output_stream=sys.stdout)
                 # Pad if needed
                 padding = tf.maximum(self.proposal_count - tf.shape(proposals)[0], 0)
                 proposals = tf.pad(proposals, [(0, padding), (0, 0)])
@@ -1000,6 +997,7 @@ class MaskRCNN():
             self.img_per_gpu = config["IMAGES_PER_GPU"]
             self.roi_positive_ratio = config["ROI_POSITIVE_RATIO"]
             self.bbox_std_dev = config["BBOX_STD_DEV"]
+            self.pos_iou_thres = config["POS_IOU_THRES"]
 
         def get_config(self):
             config = super().get_config().copy()
@@ -1013,23 +1011,27 @@ class MaskRCNN():
             return config
 
         def call(self, inputs):
-            proposals = inputs[0]
-            gt_class_ids = inputs[1]
-            gt_boxes = inputs[2]
-            gt_masks = inputs[3]
-
-            # print("proposals shape",proposals.shape)
-            # print("gt_class_ids shape",gt_class_ids.shape)
-            # print("gt_boxes shape",gt_boxes.shape)
-            # print("gt_masks shape",gt_masks.shape)
+            proposals = inputs[0] #rpn_rois
+            gt_class_ids = inputs[1] #input_gt_class_ids
+            gt_boxes = inputs[2] #gt_boxes
+            gt_masks = inputs[3] #input_gt_masks
 
             # Slice the batch and run a graph for each slice
             # TODO: Rename target_bbox to target_deltas for clarity
             names = ["rois", "target_class_ids", "target_bbox", "target_mask"]
             outputs = utils.batch_slice(
                 [proposals, gt_class_ids, gt_boxes, gt_masks],
-                lambda w, x, y, z: MaskRCNN.detection_targets_graph(w, x, y, z, self.train_rois_per_img, self.roi_positive_ratio, self.bbox_std_dev, self.mask_shape),
-                self.img_per_gpu, names=names)
+                lambda w, x, y, z: 
+                MaskRCNN.detection_targets_graph(
+                    w, x, y, z, 
+                    self.train_rois_per_img,
+                    self.roi_positive_ratio, 
+                    self.bbox_std_dev, 
+                    self.mask_shape,
+                    self.pos_iou_thres),
+                    self.img_per_gpu, names=names
+                )
+
             return outputs
 
         def compute_output_shape(self, input_shape):
@@ -1037,9 +1039,7 @@ class MaskRCNN():
                 (None, self.train_rois_per_img, 4),  # rois
                 (None, self.train_rois_per_img),  # class_ids
                 (None, self.train_rois_per_img, 4),  # deltas
-                (None, self.train_rois_per_img,
-                self.mask_shape[0],
-                self.mask_shape[1])  # masks
+                (None, self.train_rois_per_img, self.mask_shape[0], self.mask_shape[1])  # masks
             ]
 
         def compute_mask(self, inputs, mask=None):
@@ -1084,17 +1084,22 @@ class MaskRCNN():
         rpn_match = tf.squeeze(rpn_match, -1)
         # Get anchor classes. Convert the -1/+1 match to 0/1 values.
         anchor_class = tf.cast(tf.equal(rpn_match, 1), tf.int32)
+        # tf.print("rpn_class_loss_graph anchor_class",tf.shape(anchor_class),anchor_class,output_stream=sys.stdout)
         # Positive and Negative anchors contribute to the loss,
         # but neutral anchors (match value = 0) don't.
         indices = tf.where(tf.not_equal(rpn_match, 0))
         # Pick rows that contribute to the loss and filter out the rest.
         rpn_class_logits = tf.gather_nd(rpn_class_logits, indices)
         anchor_class = tf.gather_nd(anchor_class, indices)
+        # tf.print("rpn_class_loss_graph anchor_class cnt",tf.shape(anchor_class),MaskRCNN.tf_count(anchor_class,1),anchor_class,summarize=256,output_stream=sys.stdout)
+        # tf.print("rpn_class_loss_graph rpn_class_logits",tf.shape(rpn_class_logits),rpn_class_logits,output_stream=sys.stdout)
         # Cross entropy loss # not working
         loss = tf.keras.metrics.sparse_categorical_crossentropy(y_true=anchor_class,
                                                 y_pred=rpn_class_logits,
                                                 from_logits=True)
+        # tf.print("rpn_class_loss_graph loss",tf.shape(loss),loss,output_stream=sys.stdout)
         loss = tf.keras.backend.switch(tf.size(loss) > 0, tf.keras.backend.mean(loss), tf.constant(0.0))
+        # tf.print("[loss] rpn_class_loss_graph final loss",tf.shape(loss),loss,output_stream=sys.stdout)
         return loss
 
     @staticmethod
@@ -1124,8 +1129,15 @@ class MaskRCNN():
         loss = MaskRCNN.smooth_l1_loss(target_bbox, rpn_bbox)
         loss = tf.keras.backend.switch(tf.size(loss) > 0, tf.keras.backend.mean(loss), tf.constant(0.0))
 
-
+        # tf.print("[loss] rpn_bbox_loss_graph final loss",loss,output_stream=sys.stdout)
         return loss
+
+    @staticmethod
+    def tf_count(t, val):
+        elements_equal_to_value = tf.equal(t, val)
+        as_ints = tf.cast(elements_equal_to_value, tf.int32)
+        count = tf.reduce_sum(as_ints)
+        return count
 
     @staticmethod
     def mrcnn_class_loss_graph(target_class_ids, pred_class_logits, active_class_ids):
@@ -1138,28 +1150,38 @@ class MaskRCNN():
             classes that are in the dataset of the image, and 0
             for classes that are not in the dataset.
         """
+
+        # tf.print("mrcnn_class_loss_graph target_class_ids",tf.shape(target_class_ids),target_class_ids,output_stream=sys.stdout)
+        # tf.print("mrcnn_class_loss_graph pred_class_logits",tf.shape(pred_class_logits),pred_class_logits,output_stream=sys.stdout)
+        # tf.print("mrcnn_class_loss_graph active_class_ids",tf.shape(active_class_ids),active_class_ids,output_stream=sys.stdout)
+
         # During model building, Keras calls this function with
         # target_class_ids of type float32. Unclear why. Cast it
         # to int to get around it.
         target_class_ids = tf.cast(target_class_ids, 'int64')
+        # tf.print("mrcnn_class_loss_graph target_class_ids cast",tf.shape(target_class_ids),MaskRCNN.tf_count(target_class_ids,1),target_class_ids,output_stream=sys.stdout)
 
         # Find predictions of classes that are not in the dataset.
         pred_class_ids = tf.argmax(pred_class_logits, axis=2)
+        # tf.print("mrcnn_class_loss_graph pred_class_ids",tf.shape(pred_class_ids),pred_class_ids,output_stream=sys.stdout)
         # TODO: Update this line to work with batch > 1. Right now it assumes all
         #       images in a batch have the same active_class_ids
         pred_active = tf.gather(active_class_ids[0], pred_class_ids)
-
+        # tf.print("mrcnn_class_loss_graph pred_active",tf.shape(pred_active),pred_active,output_stream=sys.stdout)
         # Loss
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=target_class_ids, logits=pred_class_logits)
-
+        # tf.print("mrcnn_class_loss_graph loss",tf.shape(loss),loss,output_stream=sys.stdout)
         # Erase losses of predictions of classes that are not in the active
         # classes of the image.
         loss = loss * pred_active
+        # tf.print("mrcnn_class_loss_graph loss pred_active",tf.shape(loss),loss,output_stream=sys.stdout)
 
         # Computer loss mean. Use only predictions that contribute
         # to the loss to get a correct mean.
         loss = tf.reduce_sum(loss) / tf.reduce_sum(pred_active)
+        # tf.print("[loss] mrcnn_class_loss_graph final loss",tf.shape(loss),loss,output_stream=sys.stdout)
+
         return loss
 
     @staticmethod
@@ -1191,6 +1213,8 @@ class MaskRCNN():
                         MaskRCNN.smooth_l1_loss(y_true=target_bbox, y_pred=pred_bbox),
                         tf.constant(0.0))
         loss = tf.keras.backend.mean(loss)
+
+        # tf.print("[loss] mrcnn_bbox_loss_graph final loss",tf.shape(loss),loss,output_stream=sys.stdout)
         return loss
 
     @staticmethod
@@ -1230,21 +1254,24 @@ class MaskRCNN():
                         tf.keras.backend.binary_crossentropy(target=y_true, output=y_pred),
                         tf.constant(0.0))
         loss = tf.keras.backend.mean(loss)
+
+        # tf.print("[loss] mrcnn_mask_loss_graph final loss",tf.shape(loss),loss,output_stream=sys.stdout)
         return loss
 
     # TODO: make all config in toml
     ### MODEL CONFIG
     CHANNEL_SIZE = 256
     LAYER_NUM = 4
+    # RPN_MATCH_SIZE: (int32) matches between anchors and GT boxes. 1 = positive anchor, -1 = negative anchor, 0 = neutral
     RPN_MATCH_SIZE = 1
     RPN_BOX_SIZE = 4
     BASE_MODEL_STRIDES = [4.0, 2.0, 2.0, 2.0]
     P6_STRIDE = 2
-    ANCHOR_AREAS = [32**2,64**2,128**2,256**2,512**2]
-    ASPECT_RATIOS = [(1,2),(1,1),(2,1)]
-    ANCHOR_STRIDE = 1
+    ###ANCHOR_AREAS = [4**2,8**2,16**2,32**2,64**2] #,512**2]
+    ###ASPECT_RATIOS = [(1,3),(1,2),(1,1),(2,1),(3,1)] #w,h
+    ###ANCHOR_STRIDE = 1
     # ROIs kept after non-maximum suppression (training and inference)
-    POST_NMS_ROIS_TRAINING = 2000
+    POST_NMS_ROIS_TRAINING = 3000
     POST_NMS_ROIS_INFERENCE = 1000
     # Non-max suppression threshold to filter RPN proposals.
     # You can increase this during training to generate more propsals.
@@ -1265,12 +1292,12 @@ class MaskRCNN():
     # enough positive proposals to fill this and keep a positive:negative
     # ratio of 1:3. You can increase the number of proposals by adjusting
     # the RPN NMS threshold.
-    TRAIN_ROIS_PER_IMAGE = 200
+    # TRAIN_ROIS_PER_IMAGE = 512
     # Shape of output mask
     # To change this you also need to change the neural network mask branch
     MASK_SHAPE = [28, 28]
     # Percent of positive ROIs used to train classifier/mask heads
-    ROI_POSITIVE_RATIO = 0.33
+    ### ROI_POSITIVE_RATIO = 0.33
     # Pooled ROIs
     POOL_SIZE = 7
     MASK_POOL_SIZE = 14
@@ -1282,6 +1309,7 @@ class MaskRCNN():
      # Size of the fully-connected layers in the classification graph
     FPN_CLASSIF_FC_LAYERS_SIZE = 1024
     
+    POS_IOU_THRES = 0.5
 
 
     def __init__(self,basemodel):
@@ -1307,11 +1335,27 @@ class MaskRCNN():
         self.maxpooling = tf.keras.layers.MaxPool2D(pool_size=(1, 1), strides=(2,2), padding='SAME')
 
 
-    def forward(self,num_classes,input_image,batch_size=1):
-        
-        no_of_gpu = 1
+    def forward(self,num_classes,input_image,
+        batch_size=1,
+        no_of_gpu=1,
+        train_rois_per_img=512,
+        roi_pos_ratio=0.33,
+        anchor_areas=[32**2,64**2,128**2,256**2,512**2],
+        aspect_ratios=[(1,2),(1,1),(2,1)],
+        anchor_stride=1,
+        pos_iou_thres=0.5,
+        rpn_nms_thres=0.7):
+
         MaskRCNN.IMAGES_PER_GPU = batch_size // no_of_gpu # batch size can be no. of gpu * images per gpu; here assume no of gpu = 1
         assert MaskRCNN.IMAGES_PER_GPU > 0
+        MaskRCNN.TRAIN_ROIS_PER_IMAGE = train_rois_per_img
+        MaskRCNN.ROI_POSITIVE_RATIO = roi_pos_ratio
+        MaskRCNN.ANCHOR_AREAS = anchor_areas
+        MaskRCNN.ASPECT_RATIOS = aspect_ratios
+        MaskRCNN.ANCHOR_STRIDE = anchor_stride
+        MaskRCNN.POS_IOU_THRES = pos_iou_thres
+        MaskRCNN.RPN_NMS_THRESHOLD = rpn_nms_thres
+
         ### step1: prepare inputs
         # input_image = tf.keras.Input(shape=(sample_input.shape[1], sample_input.shape[2], sample_input.shape[3])) # only provides C dim, why doesnt provide h w here?
         input_image_meta = tf.keras.Input(shape=[MaskRCNN.get_compose_image_meta_len(num_classes)],name="input_image_meta")
@@ -1329,13 +1373,15 @@ class MaskRCNN():
 
         # USE_MINI_MASK is FALSE
         input_gt_masks = tf.keras.Input(shape=[input_image.shape[1],input_image.shape[2], None],name="input_gt_masks", dtype=bool)
-        print(">>> batch_size",batch_size)
-        print(">>> input_image.shape",input_image,input_image.shape)
-        print(">>> input_rpn_match.shape",input_rpn_match,input_rpn_match.shape)
-        print(">>> input_rpn_bbox.shape",input_rpn_bbox.shape)
-        print(">>> input_gt_class_ids.shape",input_gt_class_ids.shape)
-        print(">>> input_gt_boxes.shape",input_gt_boxes.shape)
-        print(">>> input_gt_masks.shape",input_gt_masks.shape)
+
+        logging.info("[model] MaskRCNN forwarding ...")
+        logging.info("[model] batch_size",batch_size)
+        logging.info("[model] input_image.shape",input_image,input_image.shape)
+        logging.info("[model] input_rpn_match.shape",input_rpn_match,input_rpn_match.shape)
+        logging.info("[model] input_rpn_bbox.shape",input_rpn_bbox.shape)
+        logging.info("[model] input_gt_class_ids.shape",input_gt_class_ids.shape)
+        logging.info("[model] input_gt_boxes.shape",input_gt_boxes.shape)
+        logging.info("[model] input_gt_masks.shape",input_gt_masks.shape)
         
         ### step2: prepare layers
         c2 = self.resnet_layer1(self.basemodel,input_image)
@@ -1414,7 +1460,7 @@ class MaskRCNN():
             "IMAGES_PER_GPU":MaskRCNN.IMAGES_PER_GPU,
             "ROI_POSITIVE_RATIO":MaskRCNN.ROI_POSITIVE_RATIO,
             "BBOX_STD_DEV":MaskRCNN.BBOX_STD_DEV,
-            "MASK_SHAPE":MaskRCNN.MASK_SHAPE
+            "POS_IOU_THRES":MaskRCNN.POS_IOU_THRES
         }
         rois, target_class_ids, target_bbox, target_mask =\
             MaskRCNN.DetectionTargetLayer(detect_config, name="proposal_targets")([rpn_rois, input_gt_class_ids, gt_boxes, input_gt_masks])
@@ -1439,10 +1485,10 @@ class MaskRCNN():
                                             fpn_config["MASK_POOL_SIZE"],
                                             fpn_config["NUM_CLASSES"],
                                             train_bn=fpn_config["TRAIN_BN"])
-        # return
 
         ### define Losses
         output_rois = tf.keras.layers.Lambda(lambda x: x * 1, name="output_rois")(rois)
+
         rpn_class_loss = tf.keras.layers.Lambda(lambda x: MaskRCNN.rpn_class_loss_graph(*x), name="rpn_class_loss")(
             [input_rpn_match, rpn_class_logits])
         rpn_bbox_loss = tf.keras.layers.Lambda(lambda x: MaskRCNN.rpn_bbox_loss_graph(MaskRCNN.IMAGES_PER_GPU,*x), name="rpn_bbox_loss")(
@@ -1454,6 +1500,10 @@ class MaskRCNN():
         mrcnn_mask_loss = tf.keras.layers.Lambda(lambda x: MaskRCNN.mrcnn_mask_loss_graph(*x), name="mrcnn_mask_loss")(
             [target_mask, target_class_ids, mrcnn_mask])
         
+        # tf.print("LOSS mrcnn_class_loss",tf.shape(mrcnn_class_loss),mrcnn_class_loss,output_stream=sys.stdout)
+        # tf.print("LOSS mrcnn_bbox_loss",tf.shape(mrcnn_bbox_loss),mrcnn_bbox_loss,output_stream=sys.stdout)
+        # tf.print("LOSS mrcnn_mask_loss",tf.shape(mrcnn_mask_loss),mrcnn_mask_loss,output_stream=sys.stdout)
+
         #fake loss
         # rpn_class_loss = tf.keras.layers.Lambda(lambda x: MaskRCNN.fake_rpn_class_loss_graph(*x), name="rpn_class_loss")([P6])
 

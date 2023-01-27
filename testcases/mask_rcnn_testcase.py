@@ -23,7 +23,17 @@ def mytest(**args):
     print("[info] model_key",model_key)
 
     # forward model
-    model, anchors, output_len = model.forward(testconfig['num_classes'],tf.keras.Input(shape=tuple(testconfig['input_shape']),dtype=tf.float32),batch_size=testconfig['batch_size'])
+    model, anchors, output_len = model.forward(
+        testconfig['num_classes'],
+        tf.keras.Input(shape=tuple(testconfig['input_shape']),dtype=tf.float32),
+        batch_size=testconfig['batch_size'],
+        train_rois_per_img=testconfig['TRAIN_ROIS_PER_IMAGE'],
+        roi_pos_ratio=testconfig['ROI_POSITIVE_RATIO'],
+        anchor_areas=testconfig['ANCHOR_AREAS'],
+        aspect_ratios=testconfig['ASPECT_RATIOS'],
+        anchor_stride=testconfig['ANCHOR_STRIDE'],
+        pos_iou_thres=testconfig['POS_IOU_THRES'],
+        rpn_nms_thres=testconfig['RPN_NMS_THRESHOLD'])
 
     # set loss function
     # set optimizer
@@ -80,11 +90,14 @@ def mytest(**args):
     if opt_set.opt_test:
 
         test_generator = data.get_test_data_generator(copy.deepcopy(testconfig),testconfig['batch_size'],copy.deepcopy(anchors),output_len)
-        test_ret = 0.0 #model.evaluate(x=test_generator, verbose=0)
+        test_ret = -1
+        # test_ret = model.evaluate(x=test_generator, verbose=0)
 
         test_duration = time.time() - test_start_time
 
-        utils.single_img_test(data,test_generator,model,testconfig)
+        for i in range(30):
+            inputs,outputs = test_generator[i]
+            utils.single_img_test(data,inputs,model,testconfig)
     
         return [{'avg_loss' : str(test_ret), 'run_time_sec' : float(test_duration)}]
     else:
