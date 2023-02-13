@@ -29,11 +29,14 @@ class TomlKeys:
     KEY_OUTFORMAT = "out_format"
 
     def validate_toml(loaded_toml):
-        assert TomlKeys.KEY_TITLE in loaded_toml
-        assert TomlKeys.KEY_DATASETS in loaded_toml
-        assert TomlKeys.KEY_MODELS in loaded_toml
-        assert TomlKeys.KEY_TESTCASES in loaded_toml
-        assert TomlKeys.KEY_TESTRUN in loaded_toml
+        try:
+            assert TomlKeys.KEY_TITLE in loaded_toml
+            assert TomlKeys.KEY_DATASETS in loaded_toml
+            assert TomlKeys.KEY_MODELS in loaded_toml
+            assert TomlKeys.KEY_TESTCASES in loaded_toml
+            assert TomlKeys.KEY_TESTRUN in loaded_toml
+        except:
+            logging.exception("toml validation failed")
 
 # stores the custom options used during test run
 class OptionSet:
@@ -49,10 +52,14 @@ class OptionSet:
             self.opt_test = True
 
         if self.opt_train == None and self.opt_test == True:
-            assert self.opt_model_path != None, "[error] please specify model path for testing if train==False"
+            try:
+                assert self.opt_model_path != None
+            except:
+                logging.exception("please specify model path for only testing i.e. train==False")
+                raise
 
     def __str__(self) -> str:
-        return "opt_train:{}|opt_test:{}|opt_model_path:{}|opt_save_per_epoch:{}".format(self.opt_train, self.opt_test, self.opt_model_path, self.opt_save_per_epoch)
+        return "OptionSet params: opt_train:{} | opt_test:{} | opt_model_path:{} | opt_save_per_epoch:{}".format(self.opt_train, self.opt_test, self.opt_model_path, self.opt_save_per_epoch)
 
     @staticmethod
     def get_saveweight_cb(result_path, save_best_only=True, monitor='loss'):
@@ -111,8 +118,11 @@ class TestRun:
         # run test function
         rets = testfunc(data=data, model_key=self.model_key, model=model, testfunc=testfunc,
                         testconfig=TestRun.LOADED_TESTCASES[self.testcase_key], result_path=os.path.join(PATH_TO_RESULT,self.title), opt_set=opt_set)
-        
-        assert isinstance(rets, list)
+        try:
+            assert isinstance(rets, list)
+        except:
+            logging.exception('result must be in form of list')
+            
         for index, ret in enumerate(rets):
             
             if index >= len(self.out_format):
