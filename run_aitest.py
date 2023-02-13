@@ -108,8 +108,9 @@ class TestRun:
         from _scripts.load_testcase import TestcaseLoad
         testfunc = TestcaseLoad.load_testcase(
             self.testcase_key, TestRun.LOADED_TESTCASES[self.testcase_key])
+        # run test function
         rets = testfunc(data=data, model_key=self.model_key, model=model, testfunc=testfunc,
-                        testconfig=TestRun.LOADED_TESTCASES[self.testcase_key], result_path=PATH_TO_RESULT+'/'+self.title+"/", opt_set=opt_set)
+                        testconfig=TestRun.LOADED_TESTCASES[self.testcase_key], result_path=os.path.join(PATH_TO_RESULT,self.title), opt_set=opt_set)
         
         assert isinstance(rets, list)
         for index, ret in enumerate(rets):
@@ -119,7 +120,7 @@ class TestRun:
                 continue
 
             if self.out_format[index] == "json":
-                with open(PATH_TO_RESULT+self.out_json_name(), 'w') as f:
+                with open(os.path.join(PATH_TO_RESULT,self.out_json_name()), 'w') as f:
                     json.dump(ret, f, indent=2)
                     f.close()
             else:
@@ -135,18 +136,21 @@ def run_toml(tomlfile, opt_set):
         TomlKeys.validate_toml(loaded_toml)
         logging.info("processing {} with title {}".format(
             f.name, loaded_toml[TomlKeys.KEY_TITLE]))
-
+        # set testrun title
         TestRun.set_title(loaded_toml[TomlKeys.KEY_TITLE])
-        if not os.path.exists(PATH_TO_RESULT+TestRun.title):
-            os.mkdir(PATH_TO_RESULT+TestRun.title)
+        # create a new folder under result path
+        if not os.path.exists(os.path.join(PATH_TO_RESULT,TestRun.title)):
+            os.mkdir(os.path.join(PATH_TO_RESULT,TestRun.title))
+        # load datasets,models,testcases
         TestRun.load_objects(loaded_toml[TomlKeys.KEY_DATASETS],
                              loaded_toml[TomlKeys.KEY_MODELS], loaded_toml[TomlKeys.KEY_TESTCASES])
-
+        # run test one by one
         for testindex, testrun_dict in enumerate(loaded_toml[TomlKeys.KEY_TESTRUN]):
             testrun = TestRun(testindex, testrun_dict[TomlKeys.KEY_DATASET], testrun_dict[TomlKeys.KEY_MODEL],
                               testrun_dict[TomlKeys.KEY_TESTCASE], testrun_dict[TomlKeys.KEY_OUTFORMAT])
             logging.info("running {}".format(testrun))
             testrun.run_test(opt_set)
+        # test run completed
         logging.info("testrun {} with title {} done !!!".format(
             f.name, loaded_toml[TomlKeys.KEY_TITLE]))
 
