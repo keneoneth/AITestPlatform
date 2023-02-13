@@ -7,8 +7,9 @@ run_aitest.py/aitest - aitest driver command-line interface
 
 import os
 import toml
-import argparse
 import json
+import logging
+import argparse
 
 # path to store the results of test run
 PATH_TO_RESULT = "./results/"
@@ -66,7 +67,7 @@ class OptionSet:
             period=1
         )
 
-
+# test run class object
 class TestRun:
 
     title = ""
@@ -109,30 +110,30 @@ class TestRun:
             self.testcase_key, TestRun.LOADED_TESTCASES[self.testcase_key])
         rets = testfunc(data=data, model_key=self.model_key, model=model, testfunc=testfunc,
                         testconfig=TestRun.LOADED_TESTCASES[self.testcase_key], result_path=PATH_TO_RESULT+'/'+self.title+"/", opt_set=opt_set)
+        
         assert isinstance(rets, list)
         for index, ret in enumerate(rets):
-            if not index < len(self.out_format):
-                print("[warning] results is more than out format length")
+            
+            if index >= len(self.out_format):
+                logging.warning("results length does not match with out format length")
                 continue
+
             if self.out_format[index] == "json":
                 with open(PATH_TO_RESULT+self.out_json_name(), 'w') as f:
-                    json.dump(ret, f)
+                    json.dump(ret, f, indent=2)
                     f.close()
             else:
-                print("[warning] out format {} not supported yet".format(
+                logging.warning("out format {} not supported yet".format(
                     self.out_format[index]))
 
-
-
-
-
+# function to test run toml file
 def run_toml(tomlfile, opt_set):
-    # print(opt_train,opt_test,opt_model_path,opt_save_per_epoch)
+
     with open(tomlfile) as f:
 
         loaded_toml = toml.load(f)
         TomlKeys.validate_toml(loaded_toml)
-        print("[info] processing {} with title {}".format(
+        logging.info("processing {} with title {}".format(
             f.name, loaded_toml[TomlKeys.KEY_TITLE]))
 
         TestRun.set_title(loaded_toml[TomlKeys.KEY_TITLE])
@@ -140,13 +141,13 @@ def run_toml(tomlfile, opt_set):
             os.mkdir(PATH_TO_RESULT+TestRun.title)
         TestRun.load_objects(loaded_toml[TomlKeys.KEY_DATASETS],
                              loaded_toml[TomlKeys.KEY_MODELS], loaded_toml[TomlKeys.KEY_TESTCASES])
-                             
+
         for testindex, testrun_dict in enumerate(loaded_toml[TomlKeys.KEY_TESTRUN]):
             testrun = TestRun(testindex, testrun_dict[TomlKeys.KEY_DATASET], testrun_dict[TomlKeys.KEY_MODEL],
                               testrun_dict[TomlKeys.KEY_TESTCASE], testrun_dict[TomlKeys.KEY_OUTFORMAT])
-            print("[info] running {}".format(testrun))
+            logging.info("running {}".format(testrun))
             testrun.run_test(opt_set)
-        print("[info] testrun {} with title {} done !!!".format(
+        logging.info("testrun {} with title {} done !!!".format(
             f.name, loaded_toml[TomlKeys.KEY_TITLE]))
 
 
