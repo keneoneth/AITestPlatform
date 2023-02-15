@@ -40,10 +40,3 @@ def testcase_func(func):
             ailogger.exception("testcase run failed")
             return empty_output
     return wrap
-
-
-def save_float_img(img,fname):
-    import numpy as np
-    arr = arr*255
-    arr = np.array(arr,dtype=np.uint8)
-    img.save(fname)
