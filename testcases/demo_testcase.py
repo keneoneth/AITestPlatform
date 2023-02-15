@@ -60,11 +60,16 @@ def mytest(data, model, testconfig, result_path, opt_set):
             # calc accuracy
             correct_count = 0
             for index, ret in enumerate(prob_ret):
+                pred_ret = np.argmax(ret)
+                real_ret = y_test[index]
                 if np.argmax(ret) == y_test[index]:
                     correct_count += 1
                 else:
-                    img = Image.fromarray(x_test[index])
-                    utils.save_float_img(img, os.path.join(result_path,f'err_{index}_img.png'))
+                    two_d_img = np.array(x_test[index].reshape(x_test[index].shape[0:2])*255,np.uint8)
+                    img = Image.fromarray(two_d_img)
+                    if not os.path.exists(os.path.join(result_path,'err_img_folder')):
+                        os.mkdir(os.path.join(result_path,'err_img_folder'))
+                    img.save(os.path.join(result_path,'err_img_folder',f'err_idx={index}_real={real_ret}_pred={pred_ret}_img.png'))
 
             return [{'avg_acc': correct_count / len(x_test), 'run_time_sec': float(utils.Timer.tick())}]
         else:
