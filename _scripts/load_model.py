@@ -1,5 +1,7 @@
 import importlib
 
+
+# model load class
 class ModelLoad:
     @staticmethod
     def load_model(model_key,model_dict):

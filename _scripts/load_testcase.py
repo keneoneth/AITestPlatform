@@ -1,5 +1,6 @@
 import importlib
 
+# testcase load class
 class TestcaseLoad:
     @staticmethod
     def load_testcase(testcase_key,testcase_dict):
