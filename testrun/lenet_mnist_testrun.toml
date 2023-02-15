@@ -1,22 +1,22 @@
 title = "LeNet MNIST Example"
 
 [datasets]
-[datasets.mnist]  #name of dataset folder under 'datasets' folder
-x_name = "jpg_images"
-x_format = "load_normal_images"
-y_name = "y_numbers"
-y_format = "load_npy"
+[datasets.mnist] # name of dataset folder under 'datasets' folder
+loadfname = "custom_load" # filename that contains the data load functions under datasets/mnist/ folder
+loadobj = "MNIST"         # class name of dataset
 
 [models]
 [models.lenet_model] #name of python script under 'models' folder
 modelname = "mymodel"
 
 [testcases]
-[testcases.demo_testcase] #name of testcase to run under 'testcases' folder
-testfunc = "mytest"
-testsize = 0.3 # 70% training 30% testing 
-epochs = 6
-detailed_comparison = false
+[testcases.demo_testcase] # name of testcase to run under 'testcases' folder
+testfunc = "mytest"        # function name of testcase
+testsize = 0.3             # 70% training 30% testing #custom testconfig param
+epochs = 3                 # custom testconfig param
+optimizer = 'adam'         # custom optimizer
+detailed_comparison = true # whether detailed comparison is used
+
 
 [[testrun]]
 dataset = "mnist"
