@@ -1,25 +1,25 @@
-title = "Demo MNIST Example"
+title = "Demo MNIST Example" # test run title
 
 [datasets]
-[datasets.mnist]  #name of dataset folder under 'datasets' folder
-x_name = "jpg_images" #folder/file name of data x
-x_format = "load_normal_images" #format of data x
-y_name = "y_numbers" #folder/file name of data y
-y_format = "load_npy" #format of data y
+[datasets.mnist] # name of dataset folder under 'datasets' folder
+loadfname = "custom_load" # filename that contains the data load functions under datasets/mnist/ folder
+loadobj = "MNIST"         # class name of dataset
 
 [models]
-[models.mnist_demo_model] #name of python script under 'models' folder
-modelname = "mymodel" #variable name of model
+[models.mnist_demo_model] # name of python script under 'models' folder
+modelname = "mymodel" # variable name of model
 
 [testcases]
-[testcases.demo_testcase] #name of testcase to run under 'testcases' folder
-testfunc = "mytest" #function name of testcase
-testsize = 0.3 # 70% training 30% testing #custom testconfig param
-epochs = 8 #custom testconfig param
-detailed_comparison = false
+[testcases.demo_testcase] # name of testcase to run under 'testcases' folder
+testfunc = "mytest"         # function name of testcase
+testsize = 0.3              # 70% training 30% testing #custom testconfig param
+epochs = 8                  # custom testconfig param
+optimizer = 'adam'          # custom optimizer
+detailed_comparison = true # whether detailed comparison is used
+
 
 [[testrun]]
-dataset = "mnist" #dataset name
-model = "mnist_demo_model" #model name
-testcase = "demo_testcase" #testcase name
-out_format = ["json"] #output format, only json supported for now
+dataset = "mnist"          # dataset name
+model = "mnist_demo_model" # model name
+testcase = "demo_testcase" # testcase name
+out_format = ["json"]      # output format, only json supported for now
