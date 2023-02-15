@@ -1,4 +1,7 @@
 # stores the custom options used during test run
+
+from ailogger import ailogger
+
 class OptionSet:
 
     def __init__(self, opt_train, opt_test, opt_model_path):

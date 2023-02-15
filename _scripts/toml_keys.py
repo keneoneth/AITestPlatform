@@ -1,4 +1,6 @@
 # stores the compulsory keys needed in test run toml
+from ailogger import ailogger
+
 class TomlKeys:
 
     KEY_TITLE = "title"
@@ -20,5 +22,5 @@ class TomlKeys:
             assert TomlKeys.KEY_TESTCASES in loaded_toml
             assert TomlKeys.KEY_TESTRUN in loaded_toml
         except:
-            logging.exception("toml validation failed")
+            ailogger.exception("toml validation failed")
             raise
