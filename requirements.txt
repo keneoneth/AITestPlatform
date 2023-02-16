@@ -1,0 +1,6 @@
+tensorflow
+toml
+Pillow
+logging
+opencv-python
+sklearn
