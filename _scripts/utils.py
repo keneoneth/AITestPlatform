@@ -7,15 +7,31 @@ empty_output = [{}]
 class Timer:
     test_start_time = None
 
+    @staticmethod
+    def cur():
+        return time.time()
+
+    @staticmethod
     def start():
-        Timer.test_start_time = time.time()
+        Timer.test_start_time = Timer.cur()
     
-    def tick():
-        assert Timer.test_start_time is not None
-        return time.time() - Timer.test_start_time
+    @staticmethod
+    def tick(ref_time=None):
+        if ref_time is None:
+            assert Timer.test_start_time is not None
+            ref_time = Timer.test_start_time
+        return time.time() - ref_time
+    
+def get_timestamp():
+    from datetime import datetime  
+    str_date_time = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
+    return str_date_time
 
 def load_kwargs(kwargs):
     return kwargs["data"], kwargs["model"], kwargs["testconfig"], kwargs["result_path"], kwargs["opt_set"]
+
+def cal_f1score(prec,recall):
+    return (2*prec*recall) / (prec+recall)
 
 def get_saveweight_cb(result_path, save_best_only=True, monitor='loss'):
     import tensorflow as tf
