@@ -16,12 +16,16 @@ class load_cifar10():
     label names of cifar-10
     [b'airplane', b'automobile', b'bird', b'cat', b'deer', b'dog', b'frog', b'horse', b'ship', b'truck']
     '''
-    
+
     name = 'cifar'
     testcase_path = lambda path : PathConfig.get_datasets_path(os.path.join(load_cifar10.name,"cifar-10-batches-py/",path))
     data_fnames = ["data_batch_1","data_batch_2","data_batch_3","data_batch_4","data_batch_5"]
     test_fname = "test_batch"
     data_index = 0
+
+    @staticmethod
+    def get_class_num():
+        return 10
 
     @staticmethod
     def reset():
