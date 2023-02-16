@@ -1,69 +1,58 @@
-import sys
-sys.path.append("./_scripts/")
-import time
+from ailogger import ailogger
+import utils
+
+import cv2
+import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-import numpy as np
-import cv2
-try:
-    import Image
-except ImportError:
-    from PIL import Image
-from load_dataset import load_normal_image_thread
+
+def enlarge_imgs(imgs,shape):
+    ret = []
+    for img in imgs:
+        enlarged_img = cv2.resize(img.numpy(), (shape[0],shape[1]), interpolation = cv2.INTER_LINEAR)
+        enlarged_img = enlarged_img.reshape(shape[0],shape[1],1)
+        ret.append(enlarged_img)
+    return ret
 
 
-def batch_normalize_enlarge_imgs(img_paths,input_shape,batch_index=0,batch_size=100):
-    img_paths = [img_path.numpy().decode('utf-8') for img_path in img_paths]
-    imgs = load_normal_image_thread(path=".",files=img_paths[batch_index*batch_size:(batch_index+1)*batch_size])
-    assert len(input_shape) == 3
-    imgs = np.concatenate(input_shape[2]*[imgs],axis=3)
-    new_imgs = []
-    for img in imgs[batch_index*batch_size:(batch_index+1)*batch_size]:
-        img = np.true_divide(img, 255) # normalize by 255
-        new_imgs.append(cv2.resize(img, (input_shape[0],input_shape[1]), interpolation = cv2.INTER_LINEAR))
-    new_imgs = np.array(new_imgs)
-    return new_imgs
-
-def batch_npy(y,batch_index=0,batch_size=100):
-    return y[batch_index*batch_size:(batch_index+1)*batch_size]
-
-
-def mytest(**args):
+@utils.testcase_func
+def alexnet_mnist_testcase(data, model, testconfig, result_path, opt_set):
     
-    test_start_time = time.time()
+    # record test start time
+    utils.Timer.start()
 
-    data = args["data"]
-    model = args["model"]
-    testconfig = args["testconfig"]
-    result_path = args["result_path"]
-    opt_set = args["opt_set"]
-    
-    # compile model
-    num_classes = 10 #digit 0~9
+    # forward model
+    num_classes = data.get_class_num()
     model = model.forward(num_classes)
 
-    # split data
-    x_train, x_test, y_train, y_test = train_test_split(data['x'], data['y'], test_size=testconfig['testsize'], random_state=42)
+    # set loss function
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    # set optimizer
+    if testconfig['optimizer'] == 'adam':
+        optimizer = tf.keras.optimizers.Adam()
+    else:
+        ailogger.error(f"undefined optimizer {testconfig['optimizer']}")
+        raise
+
+    # split data to train, test, valid set
+    x_train, x_test, y_train, y_test = train_test_split(data.get_x(), data.get_y(), test_size=testconfig['testsize'], random_state=42)
     x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=testconfig['validsize'], random_state=42)
 
     batch_size = testconfig['batch_size']
     # Prepare the training dataset.
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(buffer_size=1024).batch(batch_size)
 
     # Prepare the validation dataset.
-    val_dataset = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
-    val_dataset = val_dataset.batch(batch_size)
+    val_dataset = tf.data.Dataset.from_tensor_slices((x_valid, y_valid)).batch(batch_size)
 
     # Prepare the test dataset.
-    test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-    test_dataset = test_dataset.batch(batch_size)
+    test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size)
 
-    # set loss function
-    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    ailogger.info(
+        f'dataset stats: batch_train_set:{len(train_dataset)} | batch_valid_set:{len(val_dataset)} | batch_test_set : {len(test_dataset)}')
+
     
-    # set optimizer
-    optimizer = tf.keras.optimizers.Adam()
 
     #define acc metrics
     train_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
@@ -75,15 +64,17 @@ def mytest(**args):
 
     # start training
     if opt_set.opt_train:
+        # iterate epoch by epoch
         for epoch in range(testconfig['epochs']):
-            print("\nStart of epoch %d" % (epoch,))
-            start_time = time.time()
+            ailogger.info("Start of epoch %d" % epoch)
+
+            epoch_start_time = utils.Timer.cur()
+
             # Iterate over the batches of the dataset.
-            for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
-                #enlarge and batch data
-                batch_x = batch_normalize_enlarge_imgs(x_batch_train,testconfig['input_shape'],batch_index=0)
-                batch_y = batch_npy(y_batch_train,batch_index=0)
-                # print("ck",batch_x.shape,batch_y.shape)
+            for step, (batch_x, batch_y) in enumerate(train_dataset):
+
+                batch_x = tf.convert_to_tensor(enlarge_imgs(batch_x,testconfig['input_shape']))
+
                 # Open a GradientTape to record the operations run
                 # during the forward pass, which enables auto-differentiation.
                 with tf.GradientTape() as tape:
@@ -105,52 +96,50 @@ def mytest(**args):
 
                 # Log every 200 batches.
                 if step % 200 == 0:
-                    print(
+                    ailogger.info(
                         "Training loss (for one batch) at step %d: %.4f"
                         % (step, float(loss_value))
                     )
-                    print("Seen so far: %s samples" % ((step + 1) * batch_size))
+                    ailogger.info("Seen so far: %s samples" % ((step + 1) * batch_size))
                     model.save(result_path+'model_ep{epoch:02d}_loss{loss:.2f}.h5'.format(epoch=step, loss=float(loss_value)),save_format='h5')
 
             # Display metrics at the end of each epoch.
             train_acc = train_acc_metric.result()
-            print("Training acc over epoch: %.4f" % (float(train_acc),))
+            ailogger.info("Training acc over epoch: %.4f" % float(train_acc))
 
             # Reset training metrics at the end of each epoch
             train_acc_metric.reset_states()
 
             # Run a validation loop at the end of each epoch.
-            for x_batch_val, y_batch_val in val_dataset:
-                #enlarge and batch data
-                batch_x = batch_normalize_enlarge_imgs(x_batch_val,testconfig['input_shape'],batch_index=0)
-                batch_y = batch_npy(y_batch_val,batch_index=0)
-
+            for batch_x, batch_y in val_dataset:
+                batch_x = tf.convert_to_tensor(enlarge_imgs(batch_x,testconfig['input_shape']))
                 val_logits = model(batch_x, training=False)
                 # Update val metrics
                 val_acc_metric.update_state(batch_y, val_logits)
+
             val_acc = val_acc_metric.result()
             val_acc_metric.reset_states()
-            print("Validation acc: %.4f" % (float(val_acc),))
-            print("Time taken: %.2fs" % (time.time() - start_time))
-    
-    # print model summary
-    print(model.summary())
-    model.save(result_path+'final_model.h5',save_format='h5')
+            ailogger.info("Validation acc over epoch: %.4f" % float(val_acc))
+            ailogger.info("Time taken: %.2fs" % utils.Timer.tick(epoch_start_time))
+
+        # save final model
+        model.save(result_path+'final_model.h5',save_format='h5')
+
+        # print model summary
+        ailogger.info(f'model summary {model.summary()}')
+        
 
     # evaluate model
     if opt_set.opt_test:
-        for x_batch_test, y_batch_test in test_dataset:
-            #enlarge and batch data
-            batch_x = batch_normalize_enlarge_imgs(x_batch_test,testconfig['input_shape'],batch_index=0)
-            batch_y = batch_npy(y_batch_test,batch_index=0)
-
+        for batch_x, batch_y in test_dataset:
+            batch_x = tf.convert_to_tensor(enlarge_imgs(batch_x,testconfig['input_shape']))
             test_logits = model(batch_x, training=False)
             # Update val metrics
             test_acc_metric.update_state(batch_y, test_logits)
         test_acc = test_acc_metric.result()
 
-        test_duration = time.time() - test_start_time
+        test_duration = utils.Timer.tick()
 
         return [{'avg_acc' : float(test_acc),'run_time_sec' : float(test_duration)}]
     else:
-        return [{}]
+        return utils.empty_output
