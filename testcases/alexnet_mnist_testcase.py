@@ -1,8 +1,8 @@
 from ailogger import ailogger
 import utils
 
+import os
 import cv2
-import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
@@ -101,7 +101,7 @@ def alexnet_mnist_testcase(data, model, testconfig, result_path, opt_set):
                         % (step, float(loss_value))
                     )
                     ailogger.info("Seen so far: %s samples" % ((step + 1) * batch_size))
-                    model.save(result_path+'model_ep{epoch:02d}_loss{loss:.2f}.h5'.format(epoch=step, loss=float(loss_value)),save_format='h5')
+                    model.save(os.path.join(result_path,'model_ep{epoch:02d}_loss{loss:.2f}.h5').format(epoch=step, loss=float(loss_value)),save_format='h5')
 
             # Display metrics at the end of each epoch.
             train_acc = train_acc_metric.result()
@@ -123,7 +123,7 @@ def alexnet_mnist_testcase(data, model, testconfig, result_path, opt_set):
             ailogger.info("Time taken: %.2fs" % utils.Timer.tick(epoch_start_time))
 
         # save final model
-        model.save(result_path+'final_model.h5',save_format='h5')
+        model.save(os.path.join(result_path,'final_model.h5'),save_format='h5')
 
         # print model summary
         ailogger.info(f'model summary {model.summary()}')
