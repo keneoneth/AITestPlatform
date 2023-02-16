@@ -16,7 +16,7 @@ def enlarge_imgs(imgs,shape):
 
 
 @utils.testcase_func
-def alexnet_mnist_testcase(data, model, testconfig, result_path, opt_set):
+def alexnet_mnist_testcase(data, model_key, model, testconfig, result_path, opt_set):
     
     # record test start time
     utils.Timer.start()
@@ -31,6 +31,12 @@ def alexnet_mnist_testcase(data, model, testconfig, result_path, opt_set):
     # set optimizer
     if testconfig['optimizer'] == 'adam':
         optimizer = tf.keras.optimizers.Adam()
+    elif testconfig['optimizer'] == 'sgd':
+        optimizer = tf.keras.optimizers.SGD(
+            learning_rate=testconfig['sgd_learning_rate'], 
+            momentum=testconfig['sgd_momentum'], 
+            nesterov=False, name='SGD'
+        )
     else:
         ailogger.error(f"undefined optimizer {testconfig['optimizer']}")
         raise
