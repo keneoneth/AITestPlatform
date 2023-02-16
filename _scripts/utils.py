@@ -28,7 +28,7 @@ def get_timestamp():
     return str_date_time
 
 def load_kwargs(kwargs):
-    return kwargs["data"], kwargs["model"], kwargs["testconfig"], kwargs["result_path"], kwargs["opt_set"]
+    return kwargs["data"], kwargs["model_key"],kwargs["model"], kwargs["testconfig"], kwargs["result_path"], kwargs["opt_set"]
 
 def cal_f1score(prec,recall):
     return (2*prec*recall) / (prec+recall)
@@ -49,8 +49,8 @@ def testcase_func(func):
 
     def wrap(**kwargs):
         try:
-            data, model, testconfig, result_path, opt_set = load_kwargs(kwargs)
-            ret = func(data, model, testconfig, result_path, opt_set)
+            data, model_key, model, testconfig, result_path, opt_set = load_kwargs(kwargs)
+            ret = func(data, model_key, model, testconfig, result_path, opt_set)
             return ret
         except:
             ailogger.exception("testcase run failed")
