@@ -6,7 +6,6 @@ import os
 import numpy as np
 import math
 import multiprocessing
-
 try:
     import Image
 except ImportError:
@@ -23,18 +22,16 @@ class MNIST:
     def load_normal_image_thread(path, files):
         x = []
         for file_name in files:
-            img_arr = np.array(Image.open(os.path.join(path, file_name)))
-            if len(img_arr.shape) == 2:
-                img_arr = img_arr.reshape(
-                    img_arr.shape[0], img_arr.shape[1], 1)
-            assert len(img_arr.shape) == 3
+            img_arr = np.array(Image.open(os.path.join(path, file_name)),dtype=np.uint8) / 255.0
+            # if alter_shape is not None:
+            #     img_arr = 
+            img_arr = img_arr.reshape(img_arr.shape[0],img_arr.shape[1],1)
             x.append(img_arr)
-        return np.array(x) / 255.0
+        return np.array(x)
 
     @staticmethod
     def load_all_images(path):
         x = None
-
         for root, _, files in os.walk(path):
             batch_size = math.ceil(len(files) / MNIST.factor)
             batch_num = math.ceil(len(files) / batch_size)
@@ -78,7 +75,7 @@ class MNIST:
         return x_arr
 
     @staticmethod
-    def get_y():
+    def get_y(by_category=False):
         y_fpath = PathConfig.get_datasets_path(
             os.path.join(MNIST.name, 'y_numbers.npy'))
         try:
@@ -86,5 +83,16 @@ class MNIST:
         except:
             ailogger.exception(f'file path to input Y is missing {y_fpath}')
             raise
-
-        return np.load(y_fpath)
+       
+        if by_category:
+            new_y = []
+            y = np.load(y_fpath)
+            for _y in y:
+                temp = np.zeros(MNIST.get_class_num())
+                temp[_y] = 1
+                new_y.append(temp)
+            new_y = np.array(new_y)
+            print('new y shape',new_y.shape)
+            return new_y
+        else:
+            return np.load(y_fpath)
