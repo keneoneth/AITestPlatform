@@ -13,9 +13,9 @@ modelname = "mymodel" # variable name of model
 [testcases.demo_testcase] # name of testcase to run under 'testcases' folder
 testfunc = "mytest"         # function name of testcase
 testsize = 0.3              # 70% training 30% testing #custom testconfig param
-epochs = 8                  # custom testconfig param
+epochs = 1                  # custom testconfig param
 optimizer = 'adam'          # custom optimizer
-detailed_comparison = true # whether detailed comparison is used
+dump_err_img = true # whether detailed comparison is used
 
 
 [[testrun]]
