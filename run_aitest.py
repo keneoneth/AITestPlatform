@@ -9,6 +9,7 @@ import os
 import toml
 import json
 import argparse
+import utils
 from ailogger import ailogger
 from path_config import PathConfig
 from toml_keys import TomlKeys
@@ -39,12 +40,14 @@ class TestRun:
         self.model_key = model_key
         self.testcase_key = testcase_key
         self.out_format = out_format
+        self.timestamp = None
 
     def __str__(self):
         return "dataset:{} | model:{} | testcase:{}".format(self.dataset_key, self.model_key, self.testcase_key)
 
     def out_json_name(self):
-        return '%s/%s_%s.json' % (self.title, self.testcase_key, str(self.testindex))
+        self.timestamp = utils.get_timestamp()
+        return '%s/%s_%s_%s.json' % (self.title, self.timestamp, self.testcase_key, str(self.testindex))
 
     def run_test(self, opt_set):
         from _scripts.load_dataset import DataLoad
@@ -73,6 +76,7 @@ class TestRun:
 
             if self.out_format[index] == "json":
                 with open(os.path.join(PathConfig.get_results_path(),self.out_json_name()), 'w') as f:
+                    ret.update({'timestamp':self.timestamp})
                     json.dump(ret, f, indent=2)
                     f.close()
             else:
