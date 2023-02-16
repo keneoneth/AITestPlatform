@@ -14,7 +14,9 @@ modelname = "mymodel" # variable name of model
 testfunc = "mytest"         # function name of testcase
 testsize = 0.3              # 70% training 30% testing #custom testconfig param
 epochs = 1                  # custom testconfig param
-optimizer = 'adam'          # custom optimizer
+optimizer = 'sgd'                  # custom optimizer adam/sgd
+sgd_learning_rate = 0.01            # sgd learning rate
+sgd_momentum = 0.1                  # sgd momentum
 dump_err_img = true # whether detailed comparison is used
 
 

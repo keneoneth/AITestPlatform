@@ -15,10 +15,12 @@ testfunc = "alexnet_mnist_testcase" # function name of testcase
 testsize = 0.2                      # 20% testing #custom testconfig param
 validsize = 0.125                   # 80%*12.5%=10% testing #custom testconfig param
 epochs = 3                          # custom testconfig param
-optimizer = 'adam'                  # custom optimizer
+optimizer = 'adam'                  # custom optimizer adam/sgd
+sgd_learning_rate = 0.01            # sgd learning rate
+sgd_momentum = 0.1                  # sgd momentum
 detailed_comparison = true          # whether detailed comparison is used
 batch_size = 100                    # image size of each batch
-input_shape = [224,224]
+input_shape = [224, 224]
 num_classes = 10
 
 
