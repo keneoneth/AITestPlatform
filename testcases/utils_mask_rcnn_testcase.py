@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 try:
     import Image
 except ImportError:
@@ -510,6 +511,8 @@ def save_img(arr,fname,recshapes,oplague_masks,gt_recshapes,gt_oplague_masks):
 
     im.save(fname+".png")
 
+    return fname+".png"
+
 def get_gt(ori_img_shape,mold_img_shape,window,sample_imgs):
 
     gt_boxes = sample_imgs['input_gt_boxes'][0]
@@ -554,6 +557,54 @@ def get_gt(ori_img_shape,mold_img_shape,window,sample_imgs):
 
     return gt_boxes, full_masks
 
+def try_saliency_map(model,images,saved_img):
+    # logging.info(f'images:{images}')
+    with tf.GradientTape() as tape:
+        img_id = int(images['input_image_meta'][0][0])
+        img = tf.convert_to_tensor(images['input_1'])
+        logging.info(f'img shape {img.shape}')
+        images['input_1'] = img
+        tape.watch(img)
+        predictions = model(images,training=False)
+        logging.info(f'pred {type(predictions)}')
+        rpn_class_loss = predictions[9]
+        rpn_bbox_loss = predictions[10]
+        mrcnn_class_loss = predictions[11]
+        mrcnn_bbox_loss = predictions[12]
+        mrcnn_mask_loss = predictions[13]
+        logging.info(f'sa rpn_class_loss:{rpn_class_loss} {type(rpn_class_loss)}')
+        logging.info(f'sa rpn_bbox_loss:{rpn_bbox_loss} {type(rpn_bbox_loss)}')
+        # grads = tape.gradient(rpn_class_loss,img)
+        grads = tape.gradient(mrcnn_mask_loss,img)
+        dgrad_abs = tf.math.abs(grads)
+        # To get the saliency map we need to find the max of the absolute values of the gradient along each RGB channel
+
+        # logging.info(f'sa grads:{grads}')
+
+        dgrad_max_ = np.max(dgrad_abs, axis=3)[0]
+        # logging.info(dgrad_max_.shape,np.max(dgrad_abs, axis=3).shape)
+
+        arr_min, arr_max  = np.min(dgrad_max_), np.max(dgrad_max_)
+        grad_eval = (dgrad_max_ - arr_min) / (arr_max - arr_min + 1e-18)
+
+        logging.info(f'grad_eval shape {grad_eval.shape}')
+
+        
+        # fig = plt.figure(figsize = (512,512))
+        # ax1 = fig.add_subplot(1)      
+        fig, axes = plt.subplots(1,1)
+
+        # plt.imshow(np.empty(shape=grad_eval.shape),alpha=0.0)
+        I = np.asarray(Image.open(saved_img).resize(grad_eval.shape))
+        plt.imshow(I)
+        i = plt.imshow(grad_eval,cmap="jet",alpha=0.5)
+        fig.colorbar(i)
+
+        plt.savefig(f'{img_id}_grad.png',dpi=200)
+
+    pass
+
+
 def single_img_test(data,inputs,model,testconfig):
     ### try predict, but seems not working
     logging.info('single_img_test ...')
@@ -571,7 +622,7 @@ def single_img_test(data,inputs,model,testconfig):
     # logging.info("input_gt_class_ids",sample_imgs['input_gt_class_ids'].shape,sample_imgs['input_gt_class_ids'])
     # logging.info("input_gt_boxes",sample_imgs['input_gt_boxes'].shape)
     # logging.info("input_gt_masks",sample_imgs['input_gt_masks'].shape)
-
+    
     
     predictions = model.predict(sample_imgs,workers=1,use_multiprocessing=False)
     rpn_class_logits = predictions[0]
@@ -612,6 +663,7 @@ def single_img_test(data,inputs,model,testconfig):
     logging.info("[test] getting img id {}".format(img_id))
     ori_img_arr = data.get_img(img_id)
     gt_masks, class_ids = data.testset.load_mask(img_id-data.testset.img_id_offset)
+    
 
     # save_img(ori_img_arr,"single_img_test",[])
     
@@ -658,11 +710,13 @@ def single_img_test(data,inputs,model,testconfig):
 
     
     if len(final_rois) > 0:
-        save_img(ori_img_arr,"ok_single_img_test_"+str(img_id),final_rois,None,gt_boxes,None)
+        saved_img = save_img(ori_img_arr,"ok_single_img_test_"+str(img_id),final_rois,None,gt_boxes,None)
         logging.info(">>> [ok] saved image {}".format("single_img_test_"+str(img_id)))
     else:
-        save_img(ori_img_arr,"failed_single_img_test_"+str(img_id),[],None,gt_boxes,None)
+        saved_img = save_img(ori_img_arr,"failed_single_img_test_"+str(img_id),[],None,gt_boxes,None)
         logging.info(">>> [warning] none rois found")
+
+    try_saliency_map(model,sample_imgs,saved_img)
 
         # sample_imgs = {
         #     'input_1' : np.array([inputs[0][0]]),
