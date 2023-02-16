@@ -1,7 +1,7 @@
 title = "AlexNet CIFAR Example"
 
 [datasets]
-[datasets.cifar]  #name of dataset folder under 'datasets' folder
+[datasets.cifar] #name of dataset folder under 'datasets' folder
 loadfname = "custom_load"
 loadobj = "load_cifar10"
 
@@ -12,13 +12,17 @@ modelname = "mymodel"
 [testcases]
 [testcases.cifar_testcase] #name of testcase to run under 'testcases' folder
 testfunc = "mytest"
-validsize = 0.2
+testsize = 0.2                      # 20% testing #custom testconfig param
+validsize = 0.125                   # 80%*12.5%=10% testing #custom testconfig param
 epochs = 25
 batch_size = 64
-input_shape = [224,224,3] #H,W,C
+input_shape = [224, 224, 3] #H,W,C
 test_batch_size = 2000
 train_batch_size = 1024
-trial_img_no = 10
+trial_img_no = 10           # dump 10 images out as trial
+optimizer = 'sgd'           # custom optimizer adam/sgd
+sgd_learning_rate = 0.01    # sgd learning rate
+sgd_momentum = 0.1          # sgd momentum
 
 
 [[testrun]]

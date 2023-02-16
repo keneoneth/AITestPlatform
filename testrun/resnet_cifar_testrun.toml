@@ -13,13 +13,17 @@ modelname = "mymodel"
 [testcases.cifar_testcase] #name of testcase to run under 'testcases' folder
 testfunc = "mytest"
 resnet_layer = 18
-validsize = 0.001 # 99.9% training 0.1% testing
+testsize = 0.2                      # 20% testing #custom testconfig param
+validsize = 0.125                   # 80%*12.5%=10% testing #custom testconfig param
 epochs = 25
 input_shape = [224,224,3] #H,W,C
 test_batch_size = 640
 train_batch_size = 640
 batch_size = 64
-trial_img_no = 10
+trial_img_no = 10           # dump 10 images out as trial
+optimizer = 'sgd'           # custom optimizer adam/sgd
+sgd_learning_rate = 0.01    # sgd learning rate
+sgd_momentum = 0.1          # sgd momentum
 
 
 
