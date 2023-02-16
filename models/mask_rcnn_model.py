@@ -1159,7 +1159,7 @@ class MaskRCNN():
         # target_class_ids of type float32. Unclear why. Cast it
         # to int to get around it.
         target_class_ids = tf.cast(target_class_ids, 'int64')
-        # tf.print("mrcnn_class_loss_graph target_class_ids cast",tf.shape(target_class_ids),MaskRCNN.tf_count(target_class_ids,1),target_class_ids,output_stream=sys.stdout)
+        tf.print("mrcnn_class_loss_graph target_class_ids cast",tf.shape(target_class_ids),MaskRCNN.tf_count(target_class_ids,1),target_class_ids,output_stream=sys.stdout)
 
         # Find predictions of classes that are not in the dataset.
         pred_class_ids = tf.argmax(pred_class_logits, axis=2)
@@ -1374,14 +1374,14 @@ class MaskRCNN():
         # USE_MINI_MASK is FALSE
         input_gt_masks = tf.keras.Input(shape=[input_image.shape[1],input_image.shape[2], None],name="input_gt_masks", dtype=bool)
 
-        logging.info("[model] MaskRCNN forwarding ...")
-        logging.info("[model] batch_size",batch_size)
-        logging.info("[model] input_image.shape",input_image,input_image.shape)
-        logging.info("[model] input_rpn_match.shape",input_rpn_match,input_rpn_match.shape)
-        logging.info("[model] input_rpn_bbox.shape",input_rpn_bbox.shape)
-        logging.info("[model] input_gt_class_ids.shape",input_gt_class_ids.shape)
-        logging.info("[model] input_gt_boxes.shape",input_gt_boxes.shape)
-        logging.info("[model] input_gt_masks.shape",input_gt_masks.shape)
+        logging.info(f"[model] MaskRCNN forwarding ...")
+        logging.info(f"[model] batch_size {batch_size}")
+        logging.info(f"[model] input_image.shape {input_image.shape}")
+        logging.info(f"[model] input_rpn_match.shape {input_rpn_match.shape}")
+        logging.info(f"[model] input_rpn_bbox.shape {input_rpn_bbox.shape}")
+        logging.info(f"[model] input_gt_class_ids.shape {input_gt_class_ids.shape}")
+        logging.info(f"[model] input_gt_boxes.shape {input_gt_boxes.shape}")
+        logging.info(f"[model] input_gt_masks.shape {input_gt_masks.shape}")
         
         ### step2: prepare layers
         c2 = self.resnet_layer1(self.basemodel,input_image)

@@ -23,19 +23,19 @@ class NiN():
         model = tf.keras.models.Sequential()
         for layer in self.nin_block(*self.nin_params[0]):
             model.add(layer)
-        model.add(tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2,2))) #x = F.max_pool2d(x, kernel_size=3, stride=2)
+        model.add(tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2,2)))
         for layer in self.nin_block(*self.nin_params[1]):
             model.add(layer)
-        model.add(tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2,2))) #x = F.max_pool2d(x, kernel_size=3, stride=2)
+        model.add(tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=(2,2)))
         for layer in self.nin_block(*self.nin_params[2]):
             model.add(layer)
         model.add(tf.keras.layers.MaxPool2D(pool_size=3, strides=2))
         model.add(tf.keras.layers.Dropout(rate=0.5))
         for layer in self.nin_block(num_classes,self.nin_params[2][1],self.nin_params[2][2],self.nin_params[2][3]):
             model.add(layer)
-        model.add(tf.keras.layers.GlobalAveragePooling2D()) # x = F.adaptive_avg_pool2d(x, (1, 1)) # model.add(tfa.layers.AdaptiveAveragePooling2D((1,1),data_format=None))
+        model.add(tf.keras.layers.GlobalAveragePooling2D())
         model.add(tf.keras.layers.Reshape((1, 1, 10))) #batch size is automatically inferred
-        model.add(tf.keras.layers.Flatten()) #x = torch.flatten(x, start_dim=1)
+        model.add(tf.keras.layers.Flatten())
         return model
 
 
