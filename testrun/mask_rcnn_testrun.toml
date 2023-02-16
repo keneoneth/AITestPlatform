@@ -69,8 +69,8 @@ RPN_NMS_THRESHOLD = 0.4
 
 
 [[testrun]]
-###dataset = "lolimg"
-dataset = "textimg"
+dataset = "lolimg"
+# dataset = "textimg"
 model = "mask_rcnn_model"
 testcase = "mask_rcnn_testcase"
 out_format = ["json"]
