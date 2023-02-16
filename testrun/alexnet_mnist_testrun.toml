@@ -10,12 +10,16 @@ loadobj = "MNIST"         # class name of dataset
 modelname = "mymodel"
 
 [testcases]
-[testcases.demo_testcase] # name of testcase to run under 'testcases' folder
-testfunc = "mytest"         # function name of testcase
-testsize = 0.3              # 70% training 30% testing #custom testconfig param
-epochs = 3                  # custom testconfig param
-optimizer = 'adam'          # custom optimizer
-detailed_comparison = true # whether detailed comparison is used
+[testcases.alexnet_mnist_testcase] # name of testcase to run under 'testcases' folder
+testfunc = "alexnet_mnist_testcase" # function name of testcase
+testsize = 0.2                      # 20% testing #custom testconfig param
+validsize = 0.125                   # 80%*12.5%=10% testing #custom testconfig param
+epochs = 3                          # custom testconfig param
+optimizer = 'adam'                  # custom optimizer
+detailed_comparison = true          # whether detailed comparison is used
+batch_size = 100                    # image size of each batch
+input_shape = [224,224]
+num_classes = 10
 
 
 [[testrun]]
