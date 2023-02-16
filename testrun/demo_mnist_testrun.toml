@@ -3,11 +3,12 @@ title = "Demo MNIST Example" # test run title
 [datasets]
 [datasets.mnist] # name of dataset folder under 'datasets' folder
 loadfname = "custom_load" # filename that contains the data load functions under datasets/mnist/ folder
-loadobj = "MNIST"         # class name of dataset
+loadobj = "MNIST"         # class name of dataset in custom_load.py
+
 
 [models]
 [models.mnist_demo_model] # name of python script under 'models' folder
-modelname = "mymodel" # variable name of model
+modelname = "mymodel" # variable name of model in model python script
 
 [testcases]
 [testcases.demo_testcase] # name of testcase to run under 'testcases' folder
