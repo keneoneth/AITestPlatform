@@ -12,8 +12,7 @@ modelname = "mymodel"
 [testcases]
 [testcases.cifar_testcase] #name of testcase to run under 'testcases' folder
 testfunc = "mytest"
-testsize = 0.2                      # 20% testing #custom testconfig param
-validsize = 0.125                   # 80%*12.5%=10% testing #custom testconfig param
+validsize = 0.15                   # 15% of training data #custom testconfig param
 epochs = 10
 batch_size = 64
 input_shape = [224,224,3] #H,W,C

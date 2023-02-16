@@ -13,7 +13,7 @@ modelname = "mymodel"
 [testcases.demo_testcase] # name of testcase to run under 'testcases' folder
 testfunc = "mytest"        # function name of testcase
 testsize = 0.2                      # 20% testing #custom testconfig param
-validsize = 0.125                   # 80%*12.5%=10% testing #custom testconfig param
+validsize = 0.15                   # 15% of training data #custom testconfig param
 epochs = 3                 # custom testconfig param
 detailed_comparison = true # whether detailed comparison is used
 trial_img_no = 10           # dump 10 images out as trial

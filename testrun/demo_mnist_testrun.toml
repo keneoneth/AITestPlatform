@@ -12,7 +12,7 @@ modelname = "mymodel" # variable name of model
 [testcases]
 [testcases.demo_testcase] # name of testcase to run under 'testcases' folder
 testfunc = "mytest"         # function name of testcase
-testsize = 0.3              # 70% training 30% testing #custom testconfig param
+validsize = 0.15                   # 15% of training data #custom testconfig param
 epochs = 1                  # custom testconfig param
 optimizer = 'sgd'                  # custom optimizer adam/sgd
 sgd_learning_rate = 0.01            # sgd learning rate
